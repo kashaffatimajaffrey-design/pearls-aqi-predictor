@@ -22,15 +22,15 @@ Legend:
 | --- | --- | --- | --- |
 | 1 | Python | **Verified** | 3.13 local, 3.11/3.12 in CI matrix |
 | 2 | Scikit-learn | **Verified** | Ridge, RandomForest, GradientBoosting, Pipeline, imputer, metrics — all trained |
-| 3 | TensorFlow | **Verified** | MLP and LSTM both trained (RMSE 21.36 / 11.89); lost to trees, result kept |
-| 4 | XGBoost | **Verified** | **The production model.** RMSE 8.63, R² 0.206 |
+| 3 | TensorFlow | **Verified** | MLP, LSTM and a real encoder-decoder sequence model all trained (RMSE 20.00 / 11.76); all lost to trees, results kept |
+| 4 | XGBoost | **Verified** | Trained and compared; `gradient_boosting` currently wins at RMSE 7.74, R² 0.361 |
 | 5 | Hopsworks *or* Vertex AI | **Unexercised** | `src/store/` adapters written; no account. Fallback to local store verified degrading cleanly |
 | 6 | Airflow *or* GitHub Actions | **Unexercised** | Both written. Actions never fired (no remote); DAG never parsed (`apache-airflow` not installed) |
-| 7 | Streamlit | **Verified** | All six tabs rendered in a browser; zero exceptions in the server log |
+| 7 | Streamlit | **Verified** | All seven tabs rendered in a browser; zero exceptions, zero deprecation warnings in the server log |
 | 8 | Flask | **Verified** | All nine endpoints exercised with curl |
 | 9 | AQICN *or* OpenWeather | **Unexercised** | Both connectors written; no keys. Live data came from Open-Meteo |
 | 10 | SHAP | **Verified** | TreeExplainer over 300 hold-out rows; rankings in `data/artifacts/shap_summary.json` |
-| 11 | Git | **Verified** | Four commits with full history |
+| 11 | Git | **Verified** | 9 commits with full history |
 | 12 | Prometheus + Grafana *(self-imposed)* | **Unexercised** | `docker compose config` validates; Docker daemon not running, so never scraped |
 
 ## Scope
@@ -41,7 +41,7 @@ Legend:
 | 14 | Historical backfill | **Verified** | 8,670 rows, 365 days, 99% hourly coverage |
 | 15 | Training pipeline, daily | **Partial** | Runs end to end; the daily cron has never fired |
 | 16 | CI/CD automation | **Unexercised** | Three workflows written; no remote, so none has ever run |
-| 17 | Dashboard, real-time 3-day | **Verified** | Rendered live: 66 → 65 / 69 / 74 with uncertainty bands |
+| 17 | Dashboard, real-time 3-day | **Verified** | Rendered live with sky theme, gamified Progress tab, uncertainty bands |
 | 18 | EDA | **Verified** | `reports/eda_report.md` + 7 figures + notebook |
 | 19 | SHAP **or** LIME | **Verified** | Both. LIME executed: local R² 0.241 |
 | 20 | Hazardous-AQI alerts | **Partial** | Logic + cooldown covered by tests; never fired live — Karachi AQI has not crossed 150 in the window |
@@ -73,7 +73,7 @@ requirement literally, with no code change.
 `LocalFeatureStore` and `LocalModelRegistry` implement the same interface as the
 Hopsworks adapters — upsert on primary key, event-time dedupe, versioned
 bundles, a production pointer, and history. They are what actually held the
-8,670 feature rows and version `v0001`.
+8,670 feature rows and every registered model version.
 
 This is a working substitute rather than a stub, and swapping backends is one
 environment variable. But it is a substitute: no Hopsworks project has been
