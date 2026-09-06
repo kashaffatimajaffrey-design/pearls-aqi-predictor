@@ -1,11 +1,11 @@
 # Pearls AQI Predictor
 
-[![Live dashboard](https://img.shields.io/badge/dashboard-live-1e88e5?style=flat-square&logo=streamlit&logoColor=white)](https://pearls-aqi-predictor.streamlit.app)
+[![Live dashboard](https://img.shields.io/badge/dashboard-live-1e88e5?style=flat-square&logo=streamlit&logoColor=white)](https://pearls-aqi-predictor-5upvktvwg4pwnegfofuvoi.streamlit.app)
 [![CI](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/ci.yml/badge.svg)](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/ci.yml)
 [![Feature pipeline](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/feature_pipeline.yml/badge.svg)](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/feature_pipeline.yml)
 [![Training pipeline](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/training_pipeline.yml/badge.svg)](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/training_pipeline.yml)
 
-**Live dashboard → https://pearls-aqi-predictor.streamlit.app**
+**Live dashboard → https://pearls-aqi-predictor-5upvktvwg4pwnegfofuvoi.streamlit.app**
 
 Three-day Air Quality Index forecasting on a fully serverless stack, built for
 the 10Pearls internship programme.
@@ -29,7 +29,7 @@ step.
 
 ```bash
 python -m venv .venv && .venv/Scripts/activate    # Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt                   # add -r requirements-train.txt for the TF models
 cp .env.example .env                              # optional — every value has a default
 ```
 
@@ -413,8 +413,20 @@ Open-Meteo and logs a warning instead of taking the pipeline down.
 ## Deployment
 
 **Dashboard** — push to GitHub, then point Streamlit Community Cloud at
-`app/streamlit_app.py`. The scheduled workflows commit fresh data, and Streamlit
+`app/streamlit_app.py`. The scheduled workflows commit fresh data and Streamlit
 redeploys on push.
+
+Streamlit Cloud auto-discovers `requirements.txt` and cannot be pointed at a
+different filename, so that file is the *deployable* dependency set and
+deliberately excludes TensorFlow — which publishes no Python 3.14 wheels (the
+version Streamlit now provisions) and would exceed the ~1 GB resource ceiling
+anyway. Nothing in the serving path imports it.
+
+| File | Used by | Contains |
+| --- | --- | --- |
+| `requirements.txt` | Streamlit Cloud, Flask API, CI | Deployable core, no TensorFlow |
+| `requirements-train.txt` | Daily training workflow | Core **+** TensorFlow |
+| `requirements-hourly.txt` | Hourly feature workflow | Minimal: no plotting, no Streamlit |
 
 **API** — `docker compose up api`, or any container host. `gunicorn` (Linux) and
 `waitress` (Windows) are both in `requirements.txt`.

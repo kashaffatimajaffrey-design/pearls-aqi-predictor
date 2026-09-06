@@ -1,0 +1,13 @@
+# Training environment: everything in the deployable core, plus TensorFlow.
+#
+# Kept separate so the deployed dashboard and the hourly job never have to carry
+# a 1.5GB dependency they do not use. Only the daily training workflow needs it,
+# to train and compare the tf_mlp / tf_lstm / tf_seq_lstm candidates.
+#
+# TensorFlow publishes no wheels for Python 3.14, so this file pins <=3.13
+# environments in practice -- the training workflow runs on 3.11.
+
+-r requirements.txt
+
+tensorflow-cpu>=2.20 ; sys_platform != "darwin"
+tensorflow>=2.20 ; sys_platform == "darwin"

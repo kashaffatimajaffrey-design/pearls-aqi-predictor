@@ -1,3 +1,18 @@
+# Deployable core. NO TensorFlow.
+#
+# Streamlit Community Cloud auto-discovers this file -- it cannot be pointed at
+# a different filename -- so requirements.txt must be the one that actually
+# deploys. TensorFlow is the problem child: it publishes no wheels for the
+# Python 3.14 that Streamlit Cloud now provisions, and at ~1.5GB it would blow
+# the ~1GB resource ceiling regardless.
+#
+# Nothing in the serving path needs it. TensorFlow is imported lazily and only
+# when a promoted bundle actually contains a keras model, and the promotion
+# guard in the training pipeline prefers deterministic models precisely so the
+# serving environment stays light.
+#
+# Training uses requirements-train.txt, which layers TensorFlow on top of this.
+
 # ---- core ----
 numpy>=1.26,<3
 pandas>=2.2
@@ -10,8 +25,6 @@ tzdata>=2024.1            # zoneinfo has no bundled tz database on Windows
 # ---- ml ----
 scikit-learn>=1.5
 xgboost>=2.1
-tensorflow-cpu>=2.20 ; sys_platform != "darwin"
-tensorflow>=2.20 ; sys_platform == "darwin"
 
 # ---- explainability ----
 shap>=0.46
