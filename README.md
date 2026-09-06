@@ -151,7 +151,7 @@ Karachi, and the pipeline drops all-empty columns rather than pretending.
 | **Noise pollution** | No causal link to AQI and no hourly feed. Correlates with traffic, but traffic is better measured directly. |
 | **Industrial emissions inventories** | Published annually and static per city. A constant column adds nothing to a single-city time-series forecast; it would only matter for a multi-city model. |
 | **Climate-change indicators** | Wrong time scale entirely — decadal trend versus a 72-hour forecast. The annual cycle is already captured by the seasonal features. |
-| **Stratospheric ozone ("the ozone layer")** | A different quantity from the pollutant. Ground-level O₃ is already used; stratospheric column ozone does not drive surface AQI. |
+| **Stratospheric ozone** | A different quantity from the pollutant. Ground-level O₃ is already used; stratospheric column ozone does not drive surface AQI. |
 | **CO₂ emissions** | Not an AQI pollutant and no short-term effect on air quality. CO (carbon *mon*oxide) is a genuine AQI pollutant and is already included. |
 | **Vehicle/traffic counts** | Genuinely valuable — likely the largest real driver in Karachi — but no free hourly feed. Currently proxied by hour-of-day, day-of-week and weekend features, which is the standard substitute. A paid TomTom or Google traffic feed would be the real version. |
 
