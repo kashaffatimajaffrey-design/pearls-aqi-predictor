@@ -217,3 +217,74 @@ class TestColumnAlignment:
         cols = feature_columns(df)
         assert "never_observed" not in cols
         assert "aqi" in cols
+
+
+class TestStochasticPromotionGuard:
+    """A neural model can win one run on a lucky seed.
+
+    Observed directly: tf_lstm scored 7.47 on a GitHub runner and 11.55 locally
+    on identical code and data. Promoting on a sub-noise win makes the daily
+    retrain churn the production model, and -- because a promoted TF bundle
+    needs TensorFlow to load -- it also breaks the deliberately lightweight
+    hourly job. The guard prefers the deterministic model unless the win exceeds
+    the measured spread.
+    """
+
+    @staticmethod
+    def _result(rmse):
+        return {"status": "ok", "fit_seconds": 1.0,
+                "train": {"rmse": rmse, "mae": rmse, "r2": 0.5, "per_horizon": {}},
+                "test": {"rmse": rmse, "mae": rmse, "r2": 0.5,
+                         "per_horizon": {f"{h}h": {"rmse": rmse, "mae": rmse, "r2": 0.5}
+                                         for h in config.HORIZONS}}}
+
+    def _pick(self, results):
+        """Replicate the selection logic, including the guard."""
+        candidates = {k: v for k, v in results.items() if k != "baseline_persistence"}
+        best = min(candidates, key=lambda k: candidates[k]["test"]["rmse"])
+        deterministic = {k: v for k, v in candidates.items()
+                         if not k.startswith(config.STOCHASTIC_PREFIXES)}
+        if best.startswith(config.STOCHASTIC_PREFIXES) and deterministic:
+            det = min(deterministic, key=lambda k: deterministic[k]["test"]["rmse"])
+            margin = deterministic[det]["test"]["rmse"] - candidates[best]["test"]["rmse"]
+            if margin < config.STOCHASTIC_NOISE_RMSE:
+                return det
+        return best
+
+    def test_sub_noise_neural_win_is_rejected(self):
+        """The real case: tf_lstm 7.47 vs gradient_boosting 7.72 -- a 0.24 gap,
+        well inside the ~0.9 measured spread."""
+        picked = self._pick({
+            "tf_lstm": self._result(7.47),
+            "gradient_boosting": self._result(7.72),
+            "xgboost": self._result(7.97),
+        })
+        assert picked == "gradient_boosting"
+
+    def test_decisive_neural_win_is_accepted(self):
+        """The guard must not block a genuine improvement."""
+        picked = self._pick({
+            "tf_lstm": self._result(5.0),
+            "gradient_boosting": self._result(7.72),
+        })
+        assert picked == "tf_lstm"
+
+    def test_deterministic_winner_is_untouched(self):
+        picked = self._pick({
+            "gradient_boosting": self._result(7.2),
+            "xgboost": self._result(7.9),
+            "tf_lstm": self._result(9.0),
+        })
+        assert picked == "gradient_boosting"
+
+    def test_guard_is_inert_with_no_deterministic_candidate(self):
+        picked = self._pick({"tf_lstm": self._result(8.0), "tf_mlp": self._result(9.0)})
+        assert picked == "tf_lstm"
+
+    def test_boundary_exactly_at_the_noise_threshold(self):
+        margin = config.STOCHASTIC_NOISE_RMSE
+        picked = self._pick({
+            "tf_lstm": self._result(7.0),
+            "gradient_boosting": self._result(7.0 + margin),
+        })
+        assert picked == "tf_lstm"   # >= threshold counts as a real win

@@ -58,6 +58,14 @@ BACKFILL_DAYS = int(os.getenv("AQI_BACKFILL_DAYS", "365"))
 TEST_SIZE_HOURS = int(os.getenv("AQI_TEST_HOURS", str(24 * 21)))  # last 3 weeks held out
 RANDOM_STATE = 42
 
+# Promotion guard. Neural candidates are stochastic: a 5-seed measurement put
+# their run-to-run RMSE spread at ~0.9 (experiments/exp_sequence_variance.py).
+# A stochastic model must therefore beat the best deterministic model by MORE
+# than that noise before it is allowed to take production, or the daily retrain
+# promotes whichever seed got lucky and the forecast churns for no reason.
+STOCHASTIC_NOISE_RMSE = float(os.getenv("AQI_STOCHASTIC_NOISE_RMSE", "1.0"))
+STOCHASTIC_PREFIXES = ("tf_",)
+
 # Pollutants that contribute to the EPA AQI itself.
 POLLUTANTS = ["pm2_5", "pm10", "no2", "so2", "o3", "co"]
 

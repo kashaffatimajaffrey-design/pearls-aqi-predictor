@@ -74,7 +74,7 @@ jobs:
         run: python -m src.pipelines.inference
 
       - name: Upload model bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: model-bundle-${{ github.run_number }}
           path: models/registry/production

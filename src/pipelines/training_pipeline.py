@@ -266,6 +266,30 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
     )
     candidates = promotable or trained
     best_name = min(candidates, key=lambda k: candidates[k]["test"]["rmse"])
+
+    # ---- stochastic-noise guard ------------------------------------------
+    # A neural candidate can win a single run on a lucky seed. Measured spread
+    # is ~0.9 RMSE, so a win smaller than that is noise, not improvement.
+    # Promoting it would also couple the lightweight hourly job to TensorFlow,
+    # which it deliberately does not install.
+    deterministic = {
+        k: v for k, v in candidates.items()
+        if not k.startswith(config.STOCHASTIC_PREFIXES)
+    }
+    noise_note = None
+    if best_name.startswith(config.STOCHASTIC_PREFIXES) and deterministic:
+        det_best = min(deterministic, key=lambda k: deterministic[k]["test"]["rmse"])
+        margin = deterministic[det_best]["test"]["rmse"] - candidates[best_name]["test"]["rmse"]
+        if margin < config.STOCHASTIC_NOISE_RMSE:
+            noise_note = (
+                f"{best_name} won by {margin:.3f} RMSE over {det_best}, which is "
+                f"inside the measured stochastic spread of "
+                f"{config.STOCHASTIC_NOISE_RMSE}. Treating it as noise and "
+                f"promoting the deterministic model instead."
+            )
+            log.warning("%s", noise_note)
+            best_name = det_best
+
     best_metrics = results[best_name]["test"]
 
     beats_baseline = baseline_rmse is None or best_metrics["rmse"] < baseline_rmse
@@ -307,6 +331,8 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
     metadata = {
         "best_model": best_name,
         "beats_persistence_baseline": bool(beats_baseline),
+        "stochastic_guard": noise_note,
+        "requires_tensorflow": best_name.startswith(config.STOCHASTIC_PREFIXES),
         "improvement_over_baseline_pct": improvement,
         "metrics": {
             "rmse": best_metrics["rmse"],
