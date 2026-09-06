@@ -283,6 +283,7 @@ def fetch_range(start, end, source: str | None = None,
         df = fn(lat, lon, start_dt, end_dt)
         if not df.empty:
             log.info("fetched %d rows from %s", len(df), source)
+            df.attrs["source"] = source
             return df
         log.warning("%s returned no rows", source)
     except Exception as exc:
@@ -290,7 +291,12 @@ def fetch_range(start, end, source: str | None = None,
 
     if source != "openmeteo":
         log.info("falling back to open-meteo")
-        return _openmeteo(lat, lon, start_dt, end_dt)
+        df = _openmeteo(lat, lon, start_dt, end_dt)
+        # Record what actually served the data. Reporting the *configured*
+        # source here would log a silent fallback as a success for a provider
+        # that returned nothing -- the run summary must not overstate provenance.
+        df.attrs["source"] = "openmeteo (fallback)"
+        return df
     return _empty()
 
 

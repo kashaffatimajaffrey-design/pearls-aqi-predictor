@@ -52,7 +52,8 @@ def run(hours: int = 168, source: str | None = None) -> dict:
     summary = {
         "run_at": started.isoformat(),
         "duration_s": round((datetime.now(UTC) - started).total_seconds(), 2),
-        "source": source or config.resolved_source(),
+        "source_configured": source or config.resolved_source(),
+        "source_effective": raw.attrs.get("source", "unknown"),
         "feature_store": store.name,
         "raw_rows": int(len(raw)),
         "feature_rows_written": int(written),

@@ -1,7 +1,8 @@
 {
-  "run_at": "2026-09-06T17:44:56.003593+00:00",
-  "duration_s": 0.78,
-  "source": "openmeteo",
+  "run_at": "2026-09-06T17:50:44.929465+00:00",
+  "duration_s": 2.39,
+  "source_configured": "openweather",
+  "source_effective": "openmeteo (fallback)",
   "feature_store": "local",
   "raw_rows": 168,
   "feature_rows_written": 96,
