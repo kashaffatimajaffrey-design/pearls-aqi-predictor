@@ -34,14 +34,34 @@ def page_css(sky: dict) -> str:
   }}
   .block-container {{padding-top: 1.6rem; max-width: 1380px;}}
 
-  /* Text drawn straight onto the gradient follows the sky, or it vanishes at
-     night. Anything inside a .panel keeps dark ink on its own light surface. */
-  .stApp h1, .stApp h2, .stApp h3, .stApp h4 {{color: var(--ink);}}
+  /* EVERY piece of text drawn straight onto the gradient must follow the sky,
+     or it disappears at night. Targeting only headings was not enough --
+     st.metric, widget labels and slider ticks all default to dark ink and were
+     invisible against the night background. Panel contents are re-darkened
+     below, after these rules, so they still win on their own light surface. */
+  .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5 {{color: var(--ink);}}
   .stApp > header {{background: transparent;}}
-  div[data-testid="stCaptionContainer"] p {{color: var(--ink); opacity: .78;}}
-  .block-container > div > div > div > div > div[data-testid="stMarkdownContainer"] > p {{
-    color: var(--ink);
+
+  [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] p,
+  [data-testid="stMetricValue"], [data-testid="stMetricDelta"] {{
+    color: var(--ink) !important;
   }}
+  [data-testid="stMetricLabel"] {{opacity: .8;}}
+
+  [data-testid="stWidgetLabel"], [data-testid="stWidgetLabel"] p,
+  [data-testid="stWidgetLabel"] label {{color: var(--ink) !important;}}
+
+  div[data-testid="stCaptionContainer"] p {{color: var(--ink); opacity: .78;}}
+  [data-testid="stMarkdownContainer"] p,
+  [data-testid="stMarkdownContainer"] li,
+  [data-testid="stMarkdownContainer"] strong {{color: var(--ink);}}
+
+  /* Slider min/max ticks and the value bubble. */
+  .stSlider [data-testid="stTickBar"], .stSlider [data-testid="stTickBar"] div,
+  .stSlider div[data-baseweb="slider"] div {{color: var(--ink);}}
+
+  .stRadio label p, .stMultiSelect label p, .stSelectbox label p,
+  .stCheckbox label p, .stToggle label p {{color: var(--ink) !important;}}
 
   /* st.container(border=True) is the only reliable way to box Streamlit
      widgets, so it becomes the frosted panel. */
@@ -52,7 +72,12 @@ def page_css(sky: dict) -> str:
     backdrop-filter: blur(9px);
     box-shadow: 0 6px 22px rgba(10,25,41,.13);
   }}
-  div[data-testid="stVerticalBlockBorderWrapper"] * {{color: var(--deep);}}
+  div[data-testid="stVerticalBlockBorderWrapper"] *,
+  div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMetricLabel"],
+  div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMetricValue"],
+  div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMarkdownContainer"] p {{
+    color: var(--deep) !important;
+  }}
   div[data-testid="stVerticalBlockBorderWrapper"] h1,
   div[data-testid="stVerticalBlockBorderWrapper"] h2,
   div[data-testid="stVerticalBlockBorderWrapper"] h3,
@@ -119,7 +144,10 @@ def page_css(sky: dict) -> str:
     border:1px solid rgba(255,255,255,.5);
   }}
   .badge.on  {{background: linear-gradient(120deg,#1e88e5,#42a5f5); color:#fff;}}
-  .badge.off {{background: rgba(255,255,255,.45); color:#5a6b7d;}}
+  /* Unearned badges were translucent white over a dark sky, which muddied to
+     grey-on-grey. Opaque enough to read, muted enough to still say "locked". */
+  .badge.off {{background: rgba(255,255,255,.86); color:#3d4f5c;}}
+  .badge.off .ico {{filter: grayscale(.85) opacity(.75);}}
   .badge .ico {{font-size:1.3rem; filter:saturate(1.1);}}
   .badge .ttl {{font-weight:700; font-size:.86rem;}}
   .badge .dsc {{font-size:.72rem; opacity:.85;}}
@@ -270,3 +298,33 @@ def stat_strip(tiles_html: list[str], footer: str = "") -> str:
     foot = f"<div style='margin-top:.7rem'>{footer}</div>" if footer else ""
     return (f"<div class='panel'><div style='display:flex;gap:.6rem'>{cells}</div>"
             f"{foot}</div>")
+
+
+# Registered once at import; every Plotly figure then inherits it, rather than
+# each of the 15 call sites having to remember to set a background. Charts sit
+# on their own light card so they stay legible whatever the sky is doing.
+CHART_TEMPLATE = "aqi_sky"
+
+
+def register_chart_template() -> str:
+    import plotly.graph_objects as go
+    import plotly.io as pio
+
+    pio.templates[CHART_TEMPLATE] = go.layout.Template(
+        layout=dict(
+            paper_bgcolor="rgba(255,255,255,.93)",
+            plot_bgcolor="rgba(245,250,255,.85)",
+            font=dict(color="#0a1929", size=12),
+            title=dict(font=dict(color="#0a1929", size=15)),
+            xaxis=dict(gridcolor="rgba(10,25,41,.10)", linecolor="rgba(10,25,41,.25)",
+                       tickfont=dict(color="#0a1929"), zerolinecolor="rgba(10,25,41,.18)"),
+            yaxis=dict(gridcolor="rgba(10,25,41,.10)", linecolor="rgba(10,25,41,.25)",
+                       tickfont=dict(color="#0a1929"), zerolinecolor="rgba(10,25,41,.18)"),
+            legend=dict(font=dict(color="#0a1929")),
+            margin=dict(l=50, r=25, t=45, b=45),
+            colorway=["#1565c0", "#e53935", "#00897b", "#8e24aa",
+                      "#f57c00", "#546e7a"],
+        )
+    )
+    pio.templates.default = f"plotly_white+{CHART_TEMPLATE}"
+    return pio.templates.default

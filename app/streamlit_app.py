@@ -54,6 +54,7 @@ st.set_page_config(
 
 SKY = game.sky_phase()
 st.markdown(theme.page_css(SKY), unsafe_allow_html=True)
+theme.register_chart_template()   # every Plotly figure inherits a legible card
 
 
 # ------------------------------------------------------------ data access ---
@@ -402,8 +403,9 @@ with tabs[1]:
                      labels={"peak_aqi": "peak AQI", "day": ""},
                      title="Last 90 days -- blue is a clean day")
         fig.add_hline(y=streak["threshold"], line_dash="dot", line_color="crimson")
-        fig.update_layout(height=300, showlegend=False,
-                          paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,.5)")
+        # No colour overrides here -- inherit the registered chart template so
+        # the title stays on its light card instead of the dark sky.
+        fig.update_layout(height=300, showlegend=False)
         st.plotly_chart(fig, width="stretch")
 
 
