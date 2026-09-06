@@ -1,12 +1,23 @@
 """Streamlit dashboard -- the front end of the AQI Predictor.
 
-Six tabs:
-  Forecast        the 3-day prediction, current conditions, active alerts
+Seven tabs:
+  Forecast        3-day prediction, current conditions, activity score, alerts
+  Progress        streaks, badges, level and the model's own report card
   History         observed AQI and pollutant series from the Feature Store
-  EDA             the exploratory analysis, computed live from stored features
+  EDA             exploratory analysis, computed live from stored features
   Explainability  global SHAP importance + a local per-prediction breakdown
   Models          the comparison table from the most recent training run
   Pipeline        freshness, run history and system health
+
+Visual language: the page wears the sky. Background moves dawn -> day -> dusk ->
+night with the local clock, and the three forecast cards deepen from light to
+dark blue as they reach further out -- which doubles as a read on rising
+uncertainty.
+
+AQI values keep their EPA colours on top of that blue shell. The
+green/yellow/orange/red/purple/maroon scale is a public-health convention;
+recolouring it would delete the danger signal that makes the page worth having.
+Blue is chrome, never the health signal.
 
 Everything reads through the Feature Store and Model Registry interfaces, so the
 same app runs against local Parquet or against Hopsworks with no code change.
@@ -25,7 +36,9 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from app import theme  # noqa: E402
 from src import config, eda  # noqa: E402
+from src import gamification as game
 from src.aqi import CATEGORIES, advice, categorize  # noqa: E402
 from src.data import fetch_aqicn_current  # noqa: E402
 from src.explain import explain_prediction, load_shap_summary  # noqa: E402
@@ -34,26 +47,13 @@ from src.store import get_feature_store, get_model_registry  # noqa: E402
 
 st.set_page_config(
     page_title=f"AQI Predictor -- {config.CITY}",
-    page_icon="\N{DASH SYMBOL}",
+    page_icon="💨",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-CSS = """
-<style>
-  .block-container {padding-top: 2rem; max-width: 1400px;}
-  .aqi-hero {border-radius: 14px; padding: 1.4rem 1.6rem; color: #10131a;
-             box-shadow: 0 2px 12px rgba(0,0,0,.10);}
-  .aqi-hero h1 {margin: 0; font-size: 3.4rem; line-height: 1;}
-  .aqi-hero p  {margin: .25rem 0 0; font-weight: 600;}
-  .aqi-card {border-radius: 12px; padding: 1rem 1.1rem; color: #10131a; height: 100%;}
-  .aqi-card .val {font-size: 2.1rem; font-weight: 700; line-height: 1.1;}
-  .aqi-card .lbl {font-size: .78rem; text-transform: uppercase; letter-spacing: .06em;
-                  opacity: .75;}
-  .muted {color: #6b7280; font-size: .85rem;}
-</style>
-"""
-st.markdown(CSS, unsafe_allow_html=True)
+SKY = game.sky_phase()
+st.markdown(theme.page_css(SKY), unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------ data access ---
@@ -78,6 +78,21 @@ def load_backtest(days: int) -> pd.DataFrame:
 @st.cache_data(ttl=900, show_spinner=False)
 def load_aqicn() -> dict | None:
     return fetch_aqicn_current()
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def load_progress(nrows: int) -> dict:
+    """Streak / level / badges. Keyed on row count so it recomputes when the
+    hourly pipeline lands new data, but not on every rerun."""
+    df = get_feature_store().read()
+    streak = game.clean_streak(df)
+    return {
+        "streak": streak,
+        "level": game.level_for(streak["days_tracked"]),
+        "badges": game.badges(df, streak, read_artifact("eda_stats.json") or {}),
+        "freshness": game.freshness(df),
+        "next_refresh": game.next_refresh(df),
+    }
 
 
 def read_artifact(name: str):
@@ -167,39 +182,66 @@ if not forecast.get("alerts"):
     )
 
 tabs = st.tabs(
-    ["Forecast", "History", "EDA", "Explainability", "Models", "Pipeline"]
+    ["Forecast", "Progress", "History", "EDA", "Explainability", "Models", "Pipeline"]
 )
 
 
 # =============================================================== FORECAST ====
 with tabs[0]:
-    hero, *cards = st.columns([1.5, 1, 1, 1])
+    prog = load_progress(len(features))
+
+    hero, *cards = st.columns([1.6, 1, 1, 1])
 
     with hero:
         st.markdown(
-            f"<div class='aqi-hero' style='background:{current['color']}'>"
-            f"<div class='lbl'>Current AQI</div>"
-            f"<h1>{current['aqi']:.0f}</h1>"
-            f"<p>{current['category']}</p></div>",
+            theme.hero_html(
+                current["aqi"], current["category"], current["color"],
+                advice(current["aqi"]), SKY["label"],
+            ),
             unsafe_allow_html=True,
         )
-        st.caption(advice(current["aqi"]))
 
-    for col, f in zip(cards, forecast["forecast"], strict=False):
+    # Cards deepen light -> dark with horizon; the EPA dot keeps the health
+    # signal legible on top of the blue.
+    for i, (col, f) in enumerate(zip(cards, forecast["forecast"], strict=False)):
         with col:
-            delta = f["aqi"] - current["aqi"]
             st.markdown(
-                f"<div class='aqi-card' style='background:{f['color']}'>"
-                f"<div class='lbl'>In {f['horizon_days']} day"
-                f"{'s' if f['horizon_days'] > 1 else ''}</div>"
-                f"<div class='val'>{f['aqi']:.0f}</div>"
-                f"<div style='font-size:.8rem;font-weight:600'>{f['category']}</div>"
-                f"<div style='font-size:.72rem;opacity:.8'>"
-                f"{delta:+.0f} vs now &nbsp;\N{BULLET}&nbsp; "
-                f"{f['aqi_lower']:.0f}-{f['aqi_upper']:.0f}</div></div>",
+                theme.forecast_card(
+                    f"In {f['horizon_days']} day{'s' if f['horizon_days'] > 1 else ''}",
+                    f["aqi"], f["category"], f["color"],
+                    f["aqi_lower"], f["aqi_upper"],
+                    f["aqi"] - current["aqi"], game.horizon_blue(i),
+                ),
                 unsafe_allow_html=True,
             )
 
+    st.write("")
+
+    # ---- activity score + streak strip ------------------------------------
+    # Both rendered as single HTML blocks: a <div> opened in one st.markdown
+    # call cannot wrap widgets emitted by the next.
+    score = game.outdoor_score(current["aqi"])
+    left, right = st.columns([1.5, 2.5])
+
+    with left:
+        st.markdown(theme.activity_panel(score), unsafe_allow_html=True)
+
+    with right:
+        streak, level, fresh = prog["streak"], prog["level"], prog["freshness"]
+        tiles = [
+            theme.tile(f"{streak['current']}", "Day streak", f"best {streak['best']}"),
+            theme.tile(f"{streak['clean_pct']:.0f}%", "Clean days",
+                       f"under AQI {streak['threshold']}"),
+            theme.tile(f"{level['level']}", "Level", level["title"]),
+            theme.tile(f"{streak['days_tracked']}", "Days tracked",
+                       f"next data {prog['next_refresh']}"),
+        ]
+        footer = (f"<span class='pill {fresh['state']}'>{fresh['label']}</span> "
+                  f"<span style='font-size:.78rem;opacity:.7'>newest observation "
+                  f"{fresh['hours']}h old</span>")
+        st.markdown(theme.stat_strip(tiles, footer), unsafe_allow_html=True)
+
+    st.write("")
     st.markdown("### Forecast trajectory")
 
     hist = features.tail(24 * 7) if not features.empty else pd.DataFrame()
@@ -265,8 +307,108 @@ with tabs[0]:
         )
 
 
-# ================================================================ HISTORY ====
+# =============================================================== PROGRESS ====
 with tabs[1]:
+    prog = load_progress(len(features))
+    streak, level, badge_list = prog["streak"], prog["level"], prog["badges"]
+
+    st.markdown("### Your air quality record")
+    st.caption(
+        "Everything here is earned from the data actually collected -- nothing "
+        "unlocks for simply opening the page."
+    )
+
+    c = st.columns(4)
+    c[0].markdown(theme.tile(f"{streak['current']}", "Current streak",
+                             "consecutive clean days"), unsafe_allow_html=True)
+    c[1].markdown(theme.tile(f"{streak['best']}", "Best streak",
+                             "all-time record"), unsafe_allow_html=True)
+    c[2].markdown(theme.tile(f"{streak['days_tracked']}", "Days tracked",
+                             "in the feature store"), unsafe_allow_html=True)
+    c[3].markdown(theme.tile(f"{streak['clean_pct']:.0f}%", "Clean rate",
+                             f"peak under AQI {streak['threshold']}"),
+                  unsafe_allow_html=True)
+
+    st.write("")
+    left, right = st.columns([1.15, 1])
+
+    with left, st.container(border=True):
+        st.markdown(f"#### Level {level['level']} • {level['title']}")
+        if level["next_title"]:
+            st.markdown(
+                f"<div style='font-size:.82rem;opacity:.7'>"
+                f"{level['days_tracked']} / {level['next_at']} days to "
+                f"<b>{level['next_title']}</b></div>"
+                f"<div class='bar'><i style='width:{level['progress']*100:.0f}%'></i></div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown("<div style='font-size:.82rem;opacity:.7'>Maximum level reached.</div>",
+                        unsafe_allow_html=True)
+
+        st.markdown("##### Badges")
+        earned = sum(b["earned"] for b in badge_list)
+        st.caption(f"{earned} of {len(badge_list)} earned")
+        for b in badge_list:
+            st.markdown(theme.badge_html(b), unsafe_allow_html=True)
+
+    with right, st.container(border=True):
+        st.markdown("#### Model report card")
+        st.caption(
+            "Graded on the production model's actual backtest against observed "
+            "AQI -- not its training metrics."
+        )
+        card = game.model_report_card(load_backtest(30))
+        if card is None:
+            st.info("Needs a trained model and enough overlapping history.")
+        else:
+            g = st.columns([1, 2])
+            g[0].markdown(
+                f"<div style='text-align:center'><div class='grade'>"
+                f"{card['overall_grade']}</div>"
+                f"<div class='cap'>overall</div></div>",
+                unsafe_allow_html=True,
+            )
+            g[1].markdown(
+                f"**MAE {card['overall_mae']}** across "
+                f"{card['predictions_scored']:,} scored predictions"
+            )
+            g[1].markdown(
+                f"**{card['hit_rate_10']}%** landed within 10 AQI points"
+            )
+            st.markdown("##### By horizon")
+            for h in card["per_horizon"]:
+                st.markdown(
+                    f"<div class='act'><span>+{h['horizon_hours']}h &nbsp;"
+                    f"<b>{h['grade']}</b></span>"
+                    f"<span style='font-size:.8rem;opacity:.75'>MAE {h['mae']} "
+                    f"&middot; {h['hit_rate_10']}% within 10</span></div>",
+                    unsafe_allow_html=True,
+                )
+            st.caption(
+                "Grades get harder further out on purpose -- that is the physics "
+                "of the problem, and hiding it would make the scoreboard a lie."
+            )
+
+    st.write("")
+    st.markdown("### Daily peak AQI")
+    peaks = game.daily_peaks(features)
+    if not peaks.empty:
+        pk = peaks.reset_index()
+        pk.columns = ["day", "peak_aqi"]
+        pk["clean"] = pk["peak_aqi"] < streak["threshold"]
+        fig = px.bar(pk.tail(90), x="day", y="peak_aqi", color="clean",
+                     color_discrete_map={True: "#42a5f5", False: "#ef5350"},
+                     labels={"peak_aqi": "peak AQI", "day": ""},
+                     title="Last 90 days -- blue is a clean day")
+        fig.add_hline(y=streak["threshold"], line_dash="dot", line_color="crimson")
+        fig.update_layout(height=300, showlegend=False,
+                          paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(255,255,255,.5)")
+        st.plotly_chart(fig, width="stretch")
+
+
+# ================================================================ HISTORY ====
+with tabs[2]:
     if features.empty:
         st.warning("No history in the Feature Store yet. Run the backfill.")
     else:
@@ -329,7 +471,7 @@ with tabs[1]:
 
 
 # ==================================================================== EDA ====
-with tabs[2]:
+with tabs[3]:
     if features.empty:
         st.warning("No data to analyse yet.")
     else:
@@ -420,7 +562,7 @@ with tabs[2]:
 
 
 # ========================================================= EXPLAINABILITY ====
-with tabs[3]:
+with tabs[4]:
     st.markdown("### Global feature importance (SHAP)")
     shap_summary = load_shap_summary()
 
@@ -483,7 +625,7 @@ with tabs[3]:
 
 
 # ================================================================= MODELS ====
-with tabs[4]:
+with tabs[5]:
     comparison = read_artifact("model_comparison.json")
     if not comparison:
         st.info("No comparison yet. Run the training pipeline.")
@@ -549,7 +691,7 @@ with tabs[4]:
 
 
 # =============================================================== PIPELINE ====
-with tabs[5]:
+with tabs[6]:
     st.markdown("### System health")
 
     feature_run = read_artifact("last_feature_run.json")
