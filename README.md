@@ -1,7 +1,19 @@
 # Pearls AQI Predictor
 
+[![Live dashboard](https://img.shields.io/badge/dashboard-live-1e88e5?style=flat-square&logo=streamlit&logoColor=white)](https://pearls-aqi-predictor.streamlit.app)
+[![CI](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/ci.yml/badge.svg)](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/ci.yml)
+[![Feature pipeline](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/feature_pipeline.yml/badge.svg)](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/feature_pipeline.yml)
+[![Training pipeline](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/training_pipeline.yml/badge.svg)](https://github.com/kashaffatimajaffrey-design/pearls-aqi-predictor/actions/workflows/training_pipeline.yml)
+
+**Live dashboard → https://pearls-aqi-predictor.streamlit.app**
+
 Three-day Air Quality Index forecasting on a fully serverless stack, built for
 the 10Pearls internship programme.
+
+The data, the model and the dashboard update on their own. The hourly workflow
+commits fresh features back to this repository, which is what keeps the
+deployed app current with no manual step — see the `chore(data): hourly feature
+refresh` commits in the history.
 
 The system ingests hourly pollutant and weather observations, engineers ~150
 features, trains and compares seven model families, promotes the best one to a
