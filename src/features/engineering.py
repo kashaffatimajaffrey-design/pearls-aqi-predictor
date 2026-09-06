@@ -30,6 +30,14 @@ ROLL_WINDOWS = [6, 12, 24, 72]
 # earlier in the day sets how concentrated the air already is.
 LAG_BASE = ["aqi", "pm2_5", "pm10", "no2", "o3", "dust", "boundary_layer_height"]
 
+# Weather variables genuinely knowable in advance from a forecast. These are the
+# only features allowed to reference a time AFTER t -- everything else is
+# strictly causal. Measured worth: ~8.9% RMSE (experiments/exp_future_weather).
+FUTURE_WX_COLS = [
+    "temperature", "humidity", "pressure", "wind_speed",
+    "precipitation", "boundary_layer_height",
+]
+
 
 def _cyclical(df: pd.DataFrame, col: str, period: int) -> None:
     df[f"{col}_sin"] = np.sin(2 * np.pi * df[col] / period)
@@ -143,6 +151,50 @@ def build_features(raw: pd.DataFrame, *, dropna: bool = True) -> pd.DataFrame:
         df = df.dropna(subset=required).reset_index(drop=True)
 
     return df
+
+
+def add_future_weather(df: pd.DataFrame, forecast: pd.DataFrame | None = None,
+                       horizons: list[int] | None = None) -> pd.DataFrame:
+    """Attach weather at t+24/48/72h as known-future covariates.
+
+    Two sources, and the distinction matters:
+
+    * **Training** (`forecast=None`) shifts *observed* weather backwards. That is
+      perfect foresight -- the standard "perfect prog" setup. It is an optimistic
+      upper bound, not what production will achieve.
+    * **Inference** (`forecast=` a real forward forecast) uses predicted weather,
+      which carries error. This is the honest path and the one that runs live.
+
+    The gap between the two is a known train/serve mismatch, documented rather
+    than hidden: the model is trained on better weather information than it gets
+    at serving time, so realised accuracy sits below the measured ceiling.
+    """
+    horizons = horizons or config.HORIZONS
+    out = df.copy()
+    out["ts"] = pd.to_datetime(out["ts"], utc=True)
+
+    if forecast is not None and not forecast.empty:
+        fc = forecast.copy()
+        fc["ts"] = pd.to_datetime(fc["ts"], utc=True)
+        fc = fc.set_index("ts")
+        for h in horizons:
+            target_ts = out["ts"] + pd.Timedelta(hours=h)
+            for col in FUTURE_WX_COLS:
+                if col in fc.columns:
+                    out[f"{col}_fut_{h}h"] = target_ts.map(fc[col]).to_numpy()
+    else:
+        for h in horizons:
+            for col in FUTURE_WX_COLS:
+                if col in out.columns:
+                    out[f"{col}_fut_{h}h"] = out[col].shift(-h)
+
+    # Ventilation at the forecast hour -- the same physics that makes the
+    # present-time ventilation index useful, projected forward.
+    for h in horizons:
+        blh, wind = f"boundary_layer_height_fut_{h}h", f"wind_speed_fut_{h}h"
+        if blh in out.columns and wind in out.columns:
+            out[f"ventilation_fut_{h}h"] = out[blh] * out[wind]
+    return out
 
 
 def build_targets(features: pd.DataFrame) -> pd.DataFrame:

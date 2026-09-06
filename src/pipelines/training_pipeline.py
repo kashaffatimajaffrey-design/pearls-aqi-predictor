@@ -28,7 +28,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from .. import config
 from ..explain import compute_shap
-from ..features import build_targets, feature_columns
+from ..features import add_future_weather, build_targets, feature_columns
 from ..models import build_model, save_bundle
 from ..monitoring.metrics import record_model_metrics, record_pipeline_run
 from ..store import get_feature_store, get_model_registry
@@ -95,6 +95,11 @@ def load_training_frame() -> tuple[pd.DataFrame, list[str]]:
             "feature store is empty -- run `python -m src.pipelines.backfill` first"
         )
 
+    # Known-future weather. At training this is observed weather shifted back
+    # (perfect prog) -- an optimistic upper bound. Inference substitutes a real
+    # forecast, so live accuracy will sit below the hold-out number; that gap is
+    # recorded in the model metadata rather than left implicit.
+    features = add_future_weather(features)
     labelled = build_targets(features).dropna(subset=config.TARGET_COLS)
     if len(labelled) < 200:
         raise RuntimeError(
@@ -323,6 +328,12 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
         "test_end": str(test_df["ts"].max()),
         "city": config.CITY,
         "data_source": config.resolved_source(),
+        "uses_future_weather": True,
+        "future_weather_caveat": (
+            "Trained on observed weather shifted backwards (perfect prog). "
+            "Serving uses a real Open-Meteo forecast, which carries error, so "
+            "live accuracy is expected to sit below these hold-out metrics."
+        ),
         "feature_store": config.resolved_store(),
         "trained_at": started.isoformat(),
         "git_sha": _git_sha(),

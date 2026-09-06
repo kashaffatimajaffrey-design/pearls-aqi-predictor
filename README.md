@@ -157,15 +157,40 @@ Karachi, and the pipeline drops all-empty columns rather than pretending.
 
 ### Highest-value additions still on the table
 
-1. **Forecast weather instead of current weather.** Open-Meteo serves 120 h of
-   free forecast; using predicted meteorology at t+24/48/72 rather than
-   current-state meteorology is almost certainly the single biggest accuracy win
-   available.
+1. ~~Forecast weather instead of current weather.~~ **Done** — see
+   *Known-future weather* below. RMSE 8.63 → 7.74, R² 0.206 → 0.361.
 2. **NASA FIRMS active-fire data** (free). Crop-residue burning drives severe
    episodes across South Asia and is invisible to every feature currently used.
 3. **OpenAQ ground stations** (free) to validate against real measurements
    rather than model output.
 4. **Local holiday / Ramadan calendar**, which materially shifts traffic patterns.
+
+### Known-future weather
+
+The one class of feature permitted to reference a time *after* t. Weather at
++24/48/72 h is not something to predict — Open-Meteo publishes 120 h of it, free.
+That reframes the problem from purely autoregressive extrapolation to
+conditioning on known future drivers.
+
+Measured before it was built (`experiments/exp_future_weather.py`) and the
+delivered result matched the prediction closely:
+
+| | RMSE | R² | vs baseline |
+| --- | --- | --- | --- |
+| Before | 8.63 | 0.206 | +17.9% |
+| Predicted ceiling | 7.86 | 0.341 | — |
+| **After** | **7.74** | **0.361** | **+26.3%** |
+
+Seven future-weather features land in the SHAP top 25, and `ventilation_fut_24h`
+and `wind_speed_fut_24h` are both correctly signed as *decreasing* AQI — the
+model recovered the physics rather than fitting noise.
+
+**Train/serve caveat, stated because it is real.** Training shifts *observed*
+weather backwards ("perfect prog"), which is perfect foresight. Serving uses a
+genuine Open-Meteo forecast, which carries error. The model is therefore trained
+on better weather information than it receives live, so real accuracy sits below
+the hold-out figures above. The gap is recorded in every model's metadata under
+`future_weather_caveat` rather than left for someone to discover.
 
 ---
 

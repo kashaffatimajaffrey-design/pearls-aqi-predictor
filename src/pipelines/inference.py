@@ -23,8 +23,8 @@ import pandas as pd
 from .. import config
 from ..alerts import evaluate_forecast_alerts
 from ..aqi import advice, categorize, category_color
-from ..data import fetch_recent
-from ..features import latest_feature_row
+from ..data import fetch_recent, fetch_weather_forecast
+from ..features import add_future_weather, latest_feature_row
 from ..models import load_bundle
 from ..monitoring.metrics import record_prediction
 from ..store import get_feature_store, get_model_registry
@@ -77,6 +77,16 @@ def predict(live: bool = False) -> dict:
     row = _latest_features(live=live)
     if row.empty:
         raise RuntimeError("could not assemble a feature row for inference")
+
+    # Known-future weather from a real forward forecast. If the model was not
+    # trained with these columns they are simply ignored by the feature
+    # selection below, so this is safe for older bundles too.
+    if metadata.get("uses_future_weather") or any("_fut_" in c for c in feat_cols):
+        forecast_wx = fetch_weather_forecast()
+        if forecast_wx.empty:
+            log.warning("no weather forecast available; future-weather features "
+                        "will be imputed, degrading accuracy")
+        row = add_future_weather(row, forecast=forecast_wx)
 
     missing = [c for c in feat_cols if c not in row.columns]
     for c in missing:

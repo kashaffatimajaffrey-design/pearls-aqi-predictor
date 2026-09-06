@@ -11,7 +11,14 @@ import pandas as pd
 import pytest
 
 from src import config
-from src.features import build_features, build_targets, feature_columns, latest_feature_row
+from src.features import (
+    FUTURE_WX_COLS,
+    add_future_weather,
+    build_features,
+    build_targets,
+    feature_columns,
+    latest_feature_row,
+)
 
 
 @pytest.fixture
@@ -35,6 +42,10 @@ def raw():
         "wind_speed": np.abs(rng.normal(3.5, 1.5, n)),
         "wind_direction": rng.uniform(0, 360, n),
         "precipitation": np.zeros(n),
+        # Mixing depth: shallow at night, deep in the afternoon.
+        "boundary_layer_height": 700 + 500 * np.sin(2 * np.pi * np.arange(n) / 24),
+        "dust": 25 + rng.normal(0, 6, n),
+        "aerosol_optical_depth": np.abs(0.4 + rng.normal(0, .08, n)),
     })
 
 
@@ -121,3 +132,58 @@ class TestLatestFeatureRow:
     def test_uses_the_newest_timestamp(self, raw):
         row = latest_feature_row(raw)
         assert row["ts"].iloc[0] == raw["ts"].max()
+
+
+class TestFutureWeather:
+    """Known-future covariates are the ONLY features permitted to reference a
+    time after t. These tests pin that they look exactly as far ahead as
+    claimed, and that the training and serving paths agree."""
+
+    def test_training_mode_shifts_observed_weather(self, raw):
+        feats = build_features(raw)
+        out = add_future_weather(feats)
+        i = 100
+        for h in config.HORIZONS:
+            assert out[f"temperature_fut_{h}h"].iloc[i] == pytest.approx(
+                out["temperature"].iloc[i + h]
+            )
+
+    def test_creates_a_column_per_variable_and_horizon(self, raw):
+        out = add_future_weather(build_features(raw))
+        for h in config.HORIZONS:
+            for col in FUTURE_WX_COLS:
+                assert f"{col}_fut_{h}h" in out.columns
+
+    def test_ventilation_is_derived_at_the_forecast_hour(self, raw):
+        out = add_future_weather(build_features(raw))
+        h = config.HORIZONS[0]
+        expected = out[f"boundary_layer_height_fut_{h}h"] * out[f"wind_speed_fut_{h}h"]
+        assert out[f"ventilation_fut_{h}h"].dropna().values == pytest.approx(
+            expected.dropna().values
+        )
+
+    def test_serving_mode_reads_from_the_forecast_frame(self, raw):
+        """With a real forecast the values must come from it, not from shifting
+        observations -- otherwise production would silently use perfect prog."""
+        feats = build_features(raw).tail(1).reset_index(drop=True)
+        base_ts = feats["ts"].iloc[0]
+        forecast = pd.DataFrame({
+            "ts": [base_ts + pd.Timedelta(hours=h) for h in config.HORIZONS],
+            "temperature": [11.0, 22.0, 33.0],
+            "wind_speed": [1.0, 2.0, 3.0],
+            "boundary_layer_height": [100.0, 200.0, 300.0],
+        })
+        out = add_future_weather(feats, forecast=forecast)
+        for temp, h in zip([11.0, 22.0, 33.0], config.HORIZONS, strict=True):
+            assert out[f"temperature_fut_{h}h"].iloc[0] == pytest.approx(temp)
+
+    def test_missing_forecast_leaves_nan_for_the_imputer(self, raw):
+        feats = build_features(raw).tail(1).reset_index(drop=True)
+        out = add_future_weather(feats, forecast=pd.DataFrame(columns=["ts"]))
+        # Falls back to shifting, which has no future rows at the tail.
+        assert out[f"temperature_fut_{config.HORIZONS[0]}h"].isna().all()
+
+    def test_tail_rows_have_no_future_in_training_mode(self, raw):
+        out = add_future_weather(build_features(raw))
+        h = max(config.HORIZONS)
+        assert out[f"temperature_fut_{h}h"].tail(h).isna().all()

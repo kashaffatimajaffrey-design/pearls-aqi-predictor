@@ -1,6 +1,6 @@
 # Exploratory Data Analysis -- Karachi AQI
 
-_Generated 2026-09-06 15:24 UTC from 8,670 hourly
+_Generated 2026-09-06 17:11 UTC from 8,670 hourly
 observations spanning 366.0 days (2025-09-05 to 2026-09-06,
 98.7% hourly coverage)._
 

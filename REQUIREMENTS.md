@@ -45,7 +45,7 @@ Legend:
 | 18 | EDA | **Verified** | `reports/eda_report.md` + 7 figures + notebook |
 | 19 | SHAP **or** LIME | **Verified** | Both. LIME executed: local R² 0.241 |
 | 20 | Hazardous-AQI alerts | **Partial** | Logic + cooldown covered by tests; never fired live — Karachi AQI has not crossed 150 in the window |
-| 21 | Multiple models compared | **Verified** | Seven families, table in `data/artifacts/model_comparison.json` |
+| 21 | Multiple models compared | **Verified** | Seven families plus two sequence models, table in `data/artifacts/model_comparison.json` |
 | 22 | **Genuinely live, no manual entry** | **Unproven** | Architecturally complete; unproven until pushed and the cron fires |
 
 ---

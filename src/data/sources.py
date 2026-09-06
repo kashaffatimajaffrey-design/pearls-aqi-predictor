@@ -202,6 +202,32 @@ def _openweather(lat: float, lon: float, start: datetime, end: datetime) -> pd.D
     return _finalize(df)
 
 
+def fetch_weather_forecast(lat: float | None = None, lon: float | None = None,
+                           hours: int = 120) -> pd.DataFrame:
+    """Forward weather forecast, hourly, out to `hours`.
+
+    This is what makes known-future covariates usable in production: at
+    inference the model needs *predicted* weather at +24/48/72h, not the
+    weather now. Keyless, and Open-Meteo serves 120h.
+    """
+    lat = config.LAT if lat is None else lat
+    lon = config.LON if lon is None else lon
+    try:
+        payload = _om_get(_OM_FORECAST, {
+            "latitude": lat, "longitude": lon, "hourly": _OM_WX_VARS,
+            "forecast_days": max(1, min(7, hours // 24 + 1)), "timezone": "UTC",
+        })
+        df = _om_frame(payload, _OM_WX_RENAME)
+        if df.empty:
+            return pd.DataFrame(columns=["ts"])
+        df["ts"] = pd.to_datetime(df["ts"], utc=True)
+        now = pd.Timestamp.now(tz="UTC").floor("h")
+        return df[df["ts"] >= now].reset_index(drop=True)
+    except Exception as exc:  # pragma: no cover - network
+        log.warning("weather forecast fetch failed: %s", exc)
+        return pd.DataFrame(columns=["ts"])
+
+
 # -------------------------------------------------------------------- AQICN --
 def fetch_aqicn_current(lat: float | None = None, lon: float | None = None) -> dict | None:
     """Current reading from the nearest AQICN station, or None if unavailable."""
