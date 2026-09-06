@@ -1,6 +1,6 @@
 # Exploratory Data Analysis -- Karachi AQI
 
-_Generated 2026-09-06 17:11 UTC from 8,670 hourly
+_Generated 2026-09-06 17:30 UTC from 8,672 hourly
 observations spanning 366.0 days (2025-09-05 to 2026-09-06,
 98.7% hourly coverage)._
 
@@ -45,7 +45,7 @@ lets them dominate the gradient.
 | 12 h | 0.848 |
 | 24 h | 0.727 |
 | 48 h | 0.566 |
-| 72 h | 0.467 |
+| 72 h | 0.468 |
 | 168 h | 0.340 |
 
 Correlation stays materially above zero out to 72 hours, and there is a local
@@ -63,7 +63,7 @@ and the dashboard shows that widening uncertainty band rather than hiding it.
 | `so2` | +0.546 |
 | `pressure` | +0.514 |
 | `co` | +0.484 |
-| `wind_speed` | -0.432 |
+| `wind_speed` | -0.433 |
 | `no2` | +0.404 |
 | `humidity` | -0.368 |
 | `temperature` | -0.322 |
@@ -89,10 +89,10 @@ numerically but adjacent physically.
 
 ## 6. Figures
 
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\01_timeseries.png](figures/01_timeseries.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\02_distribution.png](figures/02_distribution.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\03_seasonality.png](figures/03_seasonality.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\04_correlation.png](figures/04_correlation.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\05_autocorrelation.png](figures/05_autocorrelation.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\06_weather.png](figures/06_weather.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\07_feature_correlation.png](figures/07_feature_correlation.png)
+![01_timeseries.png](figures/01_timeseries.png)
+![02_distribution.png](figures/02_distribution.png)
+![03_seasonality.png](figures/03_seasonality.png)
+![04_correlation.png](figures/04_correlation.png)
+![05_autocorrelation.png](figures/05_autocorrelation.png)
+![06_weather.png](figures/06_weather.png)
+![07_feature_correlation.png](figures/07_feature_correlation.png)
