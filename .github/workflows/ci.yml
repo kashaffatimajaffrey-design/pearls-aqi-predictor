@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest ruff
+
+      - name: Lint
+        run: ruff check src api app tests
+
+      - name: Unit tests
+        run: pytest tests -v --tb=short
+
+      - name: Smoke test the end-to-end pipeline
+        # A short backfill plus a fast training run proves the whole chain
+        # works on every push, without spending CI minutes on TensorFlow.
+        env:
+          AQI_CITY: Karachi
+          AQI_LAT: "24.8607"
+          AQI_LON: "67.0011"
+          AQI_DATA_DIR: ${{ runner.temp }}/aqi-data
+          AQI_MODEL_DIR: ${{ runner.temp }}/aqi-models
+        run: |
+          python -m src.pipelines.backfill --days 90
+          python -m src.pipelines.training_pipeline --fast --skip-shap
+          python -m src.pipelines.inference
+
+      - name: Verify the API boots
+        env:
+          AQI_DATA_DIR: ${{ runner.temp }}/aqi-data
+          AQI_MODEL_DIR: ${{ runner.temp }}/aqi-models
+        run: |
+          python -m api.flask_api &
+          sleep 12
+          curl -sf http://localhost:5000/health | tee /dev/stderr | grep -q status
+          curl -sf http://localhost:5000/metrics > /dev/null
+          echo "API OK"

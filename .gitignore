@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+.env
+.DS_Store
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# Staging area for the model bundle before it is registered.
+models/_staging/
+
+# Raw API payloads are reproducible; the feature store Parquet is NOT ignored --
+# committing it is what keeps the deployed dashboard live.
+data/raw/*.parquet
+
+logs/
+*.log

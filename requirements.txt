@@ -1,0 +1,32 @@
+# ---- core ----
+numpy>=1.26,<3
+pandas>=2.2
+pyarrow>=16.0
+requests>=2.32
+python-dotenv>=1.0
+joblib>=1.4
+
+# ---- ml ----
+scikit-learn>=1.5
+xgboost>=2.1
+tensorflow-cpu>=2.20 ; sys_platform != "darwin"
+tensorflow>=2.20 ; sys_platform == "darwin"
+
+# ---- explainability ----
+shap>=0.46
+lime>=0.2.0.1
+
+# ---- app / api ----
+streamlit>=1.38
+plotly>=5.24
+flask>=3.0
+flask-cors>=5.0
+gunicorn>=23.0 ; sys_platform != "win32"
+waitress>=3.0 ; sys_platform == "win32"
+
+# ---- monitoring ----
+prometheus-client>=0.21
+
+# ---- eda ----
+matplotlib>=3.9
+seaborn>=0.13

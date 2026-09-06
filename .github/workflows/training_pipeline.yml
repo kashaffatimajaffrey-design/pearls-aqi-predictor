@@ -1,0 +1,110 @@
+name: Training Pipeline (daily)
+
+# Retrains every candidate model on the accumulated feature history, promotes
+# the best one to the registry, refreshes SHAP and commits the new bundle.
+on:
+  schedule:
+    - cron: "30 2 * * *"      # 02:30 UTC daily, after several feature runs
+  workflow_dispatch:
+    inputs:
+      fast:
+        description: "Skip the TensorFlow models"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: training-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ensure the feature store has data
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          AQI_CITY: ${{ vars.AQI_CITY || 'Karachi' }}
+          AQI_LAT: ${{ vars.AQI_LAT || '24.8607' }}
+          AQI_LON: ${{ vars.AQI_LON || '67.0011' }}
+        run: |
+          if [ ! -f data/features/aqi_features_v1.parquet ]; then
+            echo "Feature store empty -- running a one-off backfill"
+            python -m src.pipelines.backfill --days 365
+          fi
+
+      - name: Train and register
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+          AQI_CITY: ${{ vars.AQI_CITY || 'Karachi' }}
+          AQI_LAT: ${{ vars.AQI_LAT || '24.8607' }}
+          AQI_LON: ${{ vars.AQI_LON || '67.0011' }}
+        run: |
+          if [ "${{ inputs.fast }}" = "true" ]; then
+            python -m src.pipelines.training_pipeline --fast
+          else
+            python -m src.pipelines.training_pipeline
+          fi
+
+      - name: Refresh EDA report
+        continue-on-error: true
+        run: python -m src.eda
+
+      - name: Refresh forecast
+        continue-on-error: true
+        run: python -m src.pipelines.inference
+
+      - name: Upload model bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-bundle-${{ github.run_number }}
+          path: models/registry/production
+          retention-days: 30
+
+      - name: Commit model and reports
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A models/ data/ reports/ || true
+          if git diff --staged --quiet; then
+            echo "no changes to commit"
+          else
+            git commit -m "chore(model): daily retrain $(date -u '+%Y-%m-%d')"
+            git pull --rebase --autostash origin ${{ github.ref_name }}
+            git push
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## Training run" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/artifacts/last_training_run.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat data/artifacts/last_training_run.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "### Model comparison" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/artifacts/model_comparison.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat data/artifacts/model_comparison.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

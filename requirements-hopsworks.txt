@@ -1,0 +1,4 @@
+# Optional: real Hopsworks Feature Store + Model Registry.
+# Install separately -- it pins several heavy transitive deps.
+hopsworks>=4.0
+hsfs>=3.7 ; python_version < "3.11"

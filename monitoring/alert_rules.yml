@@ -1,0 +1,69 @@
+groups:
+  - name: air-quality
+    rules:
+      - alert: HazardousAQIForecast
+        expr: max(aqi_forecast) >= 150
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Unhealthy AQI forecast within 72 hours"
+          description: "Forecast AQI is {{ $value }} (threshold 150)."
+
+      - alert: HazardousAQINow
+        expr: aqi_current >= 200
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very unhealthy air right now"
+          description: "Observed AQI is {{ $value }}."
+
+  - name: pipeline-health
+    rules:
+      - alert: FeaturePipelineStale
+        # The hourly job should never leave the store more than 3 hours behind.
+        expr: time() - aqi_pipeline_last_success_timestamp{pipeline="feature"} > 10800
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Feature pipeline has not succeeded in over 3 hours"
+
+      - alert: TrainingPipelineStale
+        expr: time() - aqi_pipeline_last_success_timestamp{pipeline="training"} > 172800
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No successful training run in 48 hours"
+
+      - alert: FeatureDataStale
+        expr: aqi_feature_age_seconds > 21600
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Newest feature row is more than 6 hours old"
+
+  - name: model-quality
+    rules:
+      - alert: ModelAccuracyDegraded
+        # Doubling RMSE against the ~20-25 typical for this task means the model
+        # has drifted far enough that the forecast is no longer trustworthy.
+        expr: aqi_model_rmse > 50
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Production model RMSE has degraded to {{ $value }}"
+
+      - alert: APIErrorRate
+        expr: |
+          sum(rate(aqi_api_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(aqi_api_requests_total[5m])), 0.001) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Over 10% of API requests are failing"

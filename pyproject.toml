@@ -1,0 +1,32 @@
+[project]
+name = "pearls-aqi-predictor"
+version = "1.0.0"
+description = "Three-day AQI forecasting on a serverless stack"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".venv", "data", "models", "reports", "notebooks"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",   # line length is handled by the formatter
+    "B008",   # config defaults in signatures are deliberate here
+    "B023",   # loop-variable closures are used intentionally in the explainers
+]
+
+[tool.ruff.lint.per-file-ignores]
+"api/flask_api.py" = ["E402"]      # sys.path insert must precede src imports
+"app/streamlit_app.py" = ["E402"]
+"airflow/dags/aqi_dag.py" = ["E402"]
+"src/eda.py" = ["E402"]            # matplotlib.use() must precede pyplot import
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+]

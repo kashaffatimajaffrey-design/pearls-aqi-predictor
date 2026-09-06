@@ -1,0 +1,85 @@
+name: Feature Pipeline (hourly)
+
+# Fetches the latest observations, engineers features, writes them to the
+# Feature Store and commits the result back. Committing is what keeps the
+# Streamlit dashboard live without any manual step.
+on:
+  schedule:
+    - cron: "0 * * * *"       # every hour, on the hour (UTC)
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "Trailing window to fetch (hours)"
+        required: false
+        default: "168"
+
+concurrency:
+  group: feature-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install runtime dependencies
+        # The hourly job needs no ML frameworks -- keep it fast and cheap.
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy pyarrow requests python-dotenv prometheus-client
+
+      - name: Run feature pipeline
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          AQICN_TOKEN: ${{ secrets.AQICN_TOKEN }}
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+          AQI_ALERT_WEBHOOK: ${{ secrets.AQI_ALERT_WEBHOOK }}
+          AQI_CITY: ${{ vars.AQI_CITY || 'Karachi' }}
+          AQI_LAT: ${{ vars.AQI_LAT || '24.8607' }}
+          AQI_LON: ${{ vars.AQI_LON || '67.0011' }}
+        run: python -m src.pipelines.feature_pipeline --hours ${{ inputs.hours || '168' }}
+
+      - name: Refresh forecast artifact
+        continue-on-error: true      # no model yet on a first run is not a failure
+        env:
+          AQI_CITY: ${{ vars.AQI_CITY || 'Karachi' }}
+          AQI_LAT: ${{ vars.AQI_LAT || '24.8607' }}
+          AQI_LON: ${{ vars.AQI_LON || '67.0011' }}
+        run: python -m src.pipelines.inference
+
+      - name: Commit updated data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A data/ reports/ || true
+          if git diff --staged --quiet; then
+            echo "no changes to commit"
+          else
+            git commit -m "chore(data): hourly feature refresh $(date -u '+%Y-%m-%d %H:00 UTC')"
+            git pull --rebase --autostash origin ${{ github.ref_name }}
+            git push
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "## Feature pipeline" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/artifacts/last_feature_run.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            cat data/artifacts/last_feature_run.json >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi

@@ -1,0 +1,9 @@
+{
+  "model_name": "gradient_boosting",
+  "model_rmse": 8.726532682171426,
+  "model_mae": 7.461340236179251,
+  "model_r2": 0.18737158484082508,
+  "updated_at": "2026-09-06T14:52:08.589724+00:00",
+  "training_last_success": "2026-09-06T14:52:08.588939+00:00",
+  "training_last_duration_s": 315.3
+}

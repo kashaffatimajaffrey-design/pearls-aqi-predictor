@@ -1,0 +1,74 @@
+services:
+  api:
+    build: .
+    command: python -m api.flask_api
+    ports:
+      - "5000:5000"
+    environment:
+      AQI_CITY: ${AQI_CITY:-Karachi}
+      AQI_LAT: ${AQI_LAT:-24.8607}
+      AQI_LON: ${AQI_LON:-67.0011}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+      AQICN_TOKEN: ${AQICN_TOKEN:-}
+      HOPSWORKS_API_KEY: ${HOPSWORKS_API_KEY:-}
+      HOPSWORKS_PROJECT: ${HOPSWORKS_PROJECT:-}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./reports:/app/reports
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  dashboard:
+    build: .
+    command: streamlit run app/streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      AQI_CITY: ${AQI_CITY:-Karachi}
+      AQI_LAT: ${AQI_LAT:-24.8607}
+      AQI_LON: ${AQI_LON:-67.0011}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+      AQICN_TOKEN: ${AQICN_TOKEN:-}
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./reports:/app/reports
+    depends_on:
+      - api
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:

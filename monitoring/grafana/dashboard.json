@@ -1,0 +1,144 @@
+{
+  "title": "AQI Predictor",
+  "uid": "aqi-predictor",
+  "tags": ["aqi", "ml", "forecasting"],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Current AQI",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "aqi_current", "legendFormat": "{{city}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 51 },
+              { "color": "orange", "value": 101 },
+              { "color": "red", "value": 151 },
+              { "color": "purple", "value": 201 },
+              { "color": "dark-red", "value": 301 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Forecast AQI by horizon",
+      "gridPos": { "h": 5, "w": 10, "x": 6, "y": 0 },
+      "targets": [{ "expr": "aqi_forecast", "legendFormat": "{{horizon}}" }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 51 },
+              { "color": "orange", "value": 101 },
+              { "color": "red", "value": 151 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Feature data age",
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 0 },
+      "targets": [{ "expr": "aqi_feature_age_seconds / 3600", "legendFormat": "hours" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "h",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3 },
+              { "color": "red", "value": 6 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Alerts raised",
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 0 },
+      "targets": [{ "expr": "sum(aqi_alerts_total)", "legendFormat": "total" }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Observed vs forecast AQI",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "targets": [
+        { "expr": "aqi_current", "legendFormat": "observed" },
+        { "expr": "aqi_forecast", "legendFormat": "forecast {{horizon}}" }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "lineWidth": 2, "fillOpacity": 8 } } }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Model accuracy (hold-out)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "targets": [
+        { "expr": "aqi_model_rmse", "legendFormat": "RMSE {{model}}" },
+        { "expr": "aqi_model_mae", "legendFormat": "MAE {{model}}" },
+        { "expr": "aqi_model_rmse_by_horizon", "legendFormat": "RMSE {{horizon}}" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Pipeline runs",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 },
+      "targets": [
+        {
+          "expr": "sum by (pipeline, status) (increase(aqi_pipeline_runs_total[1h]))",
+          "legendFormat": "{{pipeline}} {{status}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Pipeline duration (p95)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, pipeline) (rate(aqi_pipeline_duration_seconds_bucket[30m])))",
+          "legendFormat": "{{pipeline}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "API traffic and latency",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
+      "targets": [
+        {
+          "expr": "sum by (endpoint) (rate(aqi_api_requests_total[5m]))",
+          "legendFormat": "{{endpoint}} rps"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(aqi_api_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{endpoint}} p95"
+        }
+      ]
+    }
+  ]
+}
