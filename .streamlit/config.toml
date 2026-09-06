@@ -1,0 +1,27 @@
+# Streamlit's own theme. This file is the root fix for a readability problem
+# that CSS overrides could never fully solve.
+#
+# Previously there was no config, so Streamlit rendered every component for a
+# LIGHT theme (dark text) while the app painted a DARK background. Each widget
+# then had to be re-coloured by hand, and anything missed -- st.metric, slider
+# ticks, widget labels -- became invisible. Setting the palette here means
+# Streamlit renders its own components correctly and the CSS only has to style
+# the custom cards.
+#
+# The palette is light-based on purpose: an air-quality dashboard has to stay
+# legible in daylight on a phone, and a light base is the safe default. The blue
+# progression lives where it carries meaning -- the forecast cards deepen with
+# horizon -- rather than in a dark page background.
+
+[theme]
+base = "light"
+primaryColor = "#1565c0"
+backgroundColor = "#eef4fb"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#0f2740"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

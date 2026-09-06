@@ -1,6 +1,6 @@
 # Exploratory Data Analysis -- Karachi AQI
 
-_Generated 2026-09-06 17:30 UTC from 8,672 hourly
+_Generated 2026-09-06 18:18 UTC from 8,672 hourly
 observations spanning 366.0 days (2025-09-05 to 2026-09-06,
 98.7% hourly coverage)._
 
@@ -25,8 +25,8 @@ lets them dominate the gradient.
 
 ## 2. Temporal structure
 
-* **Daily cycle.** AQI peaks around **13:00 UTC**
-  (94.2) and bottoms out at **05:00 UTC**
+* **Daily cycle.** AQI peaks around **18:00 local**
+  (94.2) and bottoms out at **10:00 local**
   (88.7) -- a swing of
   5.5 AQI points. Hour-of-day is
   therefore encoded cyclically (sin/cos) so that 23:00 and 00:00 sit next to each
@@ -34,7 +34,7 @@ lets them dominate the gradient.
 * **Weekly cycle.** Sunday is the worst day on average,
   consistent with a traffic-driven component.
 * **Seasonal cycle.** November is the dirtiest month
-  (113.8) and September the cleanest.
+  (114.2) and September the cleanest.
 
 ## 3. Autocorrelation -- the case for the lag window
 
@@ -89,10 +89,10 @@ numerically but adjacent physically.
 
 ## 6. Figures
 
-![01_timeseries.png](figures/01_timeseries.png)
-![02_distribution.png](figures/02_distribution.png)
-![03_seasonality.png](figures/03_seasonality.png)
-![04_correlation.png](figures/04_correlation.png)
-![05_autocorrelation.png](figures/05_autocorrelation.png)
-![06_weather.png](figures/06_weather.png)
-![07_feature_correlation.png](figures/07_feature_correlation.png)
+![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\01_timeseries.png](figures/01_timeseries.png)
+![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\02_distribution.png](figures/02_distribution.png)
+![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\03_seasonality.png](figures/03_seasonality.png)
+![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\04_correlation.png](figures/04_correlation.png)
+![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\05_autocorrelation.png](figures/05_autocorrelation.png)
+![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\06_weather.png](figures/06_weather.png)
+![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\07_feature_correlation.png](figures/07_feature_correlation.png)

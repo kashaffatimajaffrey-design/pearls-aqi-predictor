@@ -19,13 +19,13 @@
     "Good": 21
   },
   "dominant_pollutant_mode": "pm2_5",
-  "peak_hour": 13,
+  "peak_hour": 18,
   "peak_hour_aqi": 94.2,
-  "cleanest_hour": 5,
+  "cleanest_hour": 10,
   "cleanest_hour_aqi": 88.7,
   "worst_weekday": 6,
   "worst_month": 11,
-  "worst_month_aqi": 113.8,
+  "worst_month_aqi": 114.2,
   "best_month": 9,
   "missing_pct": 0.0
 }

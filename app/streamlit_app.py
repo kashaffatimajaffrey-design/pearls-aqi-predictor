@@ -9,15 +9,22 @@ Seven tabs:
   Models          the comparison table from the most recent training run
   Pipeline        freshness, run history and system health
 
-Visual language: the page wears the sky. Background moves dawn -> day -> dusk ->
-night with the local clock, and the three forecast cards deepen from light to
-dark blue as they reach further out -- which doubles as a read on rising
-uncertainty.
+Visual language. The page is light-based, always: readability must not depend on
+the time of day. An earlier dark-sky version meant fighting Streamlit's
+light-theme components on every widget, and losing -- st.metric and slider
+labels rendered as dark text on a dark background and were invisible. The theme
+now lives in .streamlit/config.toml so Streamlit renders its own components
+correctly, and the CSS only styles the custom cards.
 
-AQI values keep their EPA colours on top of that blue shell. The
-green/yellow/orange/red/purple/maroon scale is a public-health convention;
-recolouring it would delete the danger signal that makes the page worth having.
-Blue is chrome, never the health signal.
+The sky still shifts hue dawn -> day -> dusk -> night, but stays light in every
+phase. The blue progression lives where it carries meaning: the three forecast
+cards deepen from light to dark as they reach further out, which doubles as a
+read on rising uncertainty.
+
+AQI values keep their EPA colours. The green/yellow/orange/red/purple/maroon
+scale is a public-health convention; recolouring it would delete the danger
+signal that makes the page worth having. Blue is chrome, never the health
+signal.
 
 Everything reads through the Feature Store and Model Registry interfaces, so the
 same app runs against local Parquet or against Hopsworks with no code change.
@@ -25,6 +32,7 @@ same app runs against local Parquet or against Hopsworks with no code change.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -40,8 +48,9 @@ from app import theme  # noqa: E402
 from src import config, eda  # noqa: E402
 from src import gamification as game
 from src.aqi import CATEGORIES, advice, categorize  # noqa: E402
-from src.data import fetch_aqicn_current  # noqa: E402
+from src.data import fetch_aqicn_current, fetch_weather_forecast  # noqa: E402
 from src.explain import explain_prediction, load_shap_summary  # noqa: E402
+from src.features import add_future_weather  # noqa: E402
 from src.pipelines import inference  # noqa: E402
 from src.store import get_feature_store, get_model_registry  # noqa: E402
 
@@ -488,15 +497,16 @@ with tabs[3]:
         c[4].metric("Unhealthy hours", f"{stats['unhealthy_pct']}%")
 
         st.markdown(
-            f"AQI peaks around **{stats['peak_hour']:02d}:00 UTC** "
+            f"AQI peaks around **{stats['peak_hour']:02d}:00 local** "
             f"({stats['peak_hour_aqi']}) and is cleanest at "
-            f"**{stats['cleanest_hour']:02d}:00 UTC** ({stats['cleanest_hour_aqi']}). "
+            f"**{stats['cleanest_hour']:02d}:00 local** ({stats['cleanest_hour_aqi']}). "
             f"The most frequent dominant pollutant is `{stats['dominant_pollutant_mode']}`."
         )
 
         left, right = st.columns(2)
         with left:
-            hourly = features.groupby(features["ts"].dt.hour)["aqi"].mean().reset_index()
+            local_ts = features["ts"].dt.tz_convert(config.TIMEZONE)
+            hourly = features.groupby(local_ts.dt.hour)["aqi"].mean().reset_index()
             hourly.columns = ["hour", "mean_aqi"]
             st.plotly_chart(
                 px.line(hourly, x="hour", y="mean_aqi", markers=True,
@@ -504,7 +514,8 @@ with tabs[3]:
                 width="stretch",
             )
         with right:
-            dow = features.groupby(features["ts"].dt.dayofweek)["aqi"].mean().reset_index()
+            dow_ts = features["ts"].dt.tz_convert(config.TIMEZONE)
+            dow = features.groupby(dow_ts.dt.dayofweek)["aqi"].mean().reset_index()
             dow.columns = ["dow", "mean_aqi"]
             dow["dow"] = dow["dow"].map(
                 dict(enumerate(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]))
@@ -560,7 +571,21 @@ with tabs[3]:
         report = config.REPORT_DIR / "eda_report.md"
         if report.exists():
             with st.expander("Full written EDA report"):
-                st.markdown(report.read_text(encoding="utf-8"))
+                text = report.read_text(encoding="utf-8")
+                # Markdown image links are relative to the report file, which
+                # Streamlit cannot resolve -- they render as broken icons. Strip
+                # them and show the actual files instead.
+                prose = re.sub(r"!\[[^\]]*\]\([^)]*\)\s*", "", text)
+                st.markdown(prose)
+                figures = sorted(config.FIGURE_DIR.glob("*.png"))
+                if figures:
+                    st.markdown("#### Figures")
+                    for fig_path in figures:
+                        st.image(
+                            str(fig_path),
+                            caption=fig_path.stem.split("_", 1)[-1].replace("_", " ").title(),
+                            width="stretch",
+                        )
 
 
 # ========================================================= EXPLAINABILITY ====
@@ -602,9 +627,20 @@ with tabs[4]:
             try:
                 pipeline, metadata = inference._load_production()
                 cols = metadata.get("feature_columns") or []
+
+                # The feature store holds observations only; the known-future
+                # weather columns are attached at inference time. Rebuild them
+                # the same way here, or the model's expected columns are missing
+                # and SHAP fails with "not in index".
+                row = features.tail(1)
+                background = features.tail(500)
+                if any("_fut_" in c for c in cols):
+                    row = add_future_weather(row, forecast=fetch_weather_forecast())
+                    background = add_future_weather(background)  # shifted, as in training
+
                 local = explain_prediction(
-                    pipeline, features.tail(1), cols,
-                    background=features.tail(500),
+                    pipeline, row, cols,
+                    background=background,
                     model_name=metadata.get("best_model", ""),
                     horizon_index=config.HORIZONS.index(horizon),
                 )

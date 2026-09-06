@@ -20,10 +20,14 @@ from . import config
 # ---------------------------------------------------------------- theming ---
 # Blue app chrome. AQI values keep their EPA colours -- see module docstring.
 SKY = {
-    "dawn":  {"from": "#7fb3e0", "to": "#cfe8ff", "ink": "#0a1929", "label": "Dawn"},
-    "day":   {"from": "#64b5f6", "to": "#e3f2fd", "ink": "#0a1929", "label": "Daytime"},
-    "dusk":  {"from": "#2c4a6e", "to": "#7a9cc4", "ink": "#f0f7ff", "label": "Dusk"},
-    "night": {"from": "#0a1929", "to": "#1e3a5f", "ink": "#e3f2fd", "label": "Night"},
+    # Every phase is LIGHT with dark ink. The sky still shifts through the day,
+    # but readability is not allowed to depend on the time of day -- a dark page
+    # meant fighting Streamlit's light-theme components on every widget, and
+    # losing. Hue carries the mood; contrast stays constant.
+    "dawn":  {"from": "#fbe6dd", "to": "#eef4fb", "ink": "#0f2740", "label": "Dawn"},
+    "day":   {"from": "#cfe4fa", "to": "#f4f9ff", "ink": "#0f2740", "label": "Daytime"},
+    "dusk":  {"from": "#e3dcf2", "to": "#eef4fb", "ink": "#0f2740", "label": "Dusk"},
+    "night": {"from": "#c6d6ea", "to": "#e9f0f9", "ink": "#0f2740", "label": "Night"},
 }
 
 # Forecast depth: further out = deeper blue = less certain.

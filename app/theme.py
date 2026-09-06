@@ -22,8 +22,8 @@ def page_css(sky: dict) -> str:
     --sky-from: {sky['from']};
     --sky-to: {sky['to']};
     --ink: {sky['ink']};
-    --panel: rgba(255,255,255,.82);
-    --panel-brd: rgba(255,255,255,.55);
+    --panel: #ffffff;
+    --panel-brd: rgba(15,39,64,.10);
     --deep: #0a1929;
   }}
 
@@ -70,7 +70,7 @@ def page_css(sky: dict) -> str:
     border: 1px solid var(--panel-brd) !important;
     border-radius: 16px;
     backdrop-filter: blur(9px);
-    box-shadow: 0 6px 22px rgba(10,25,41,.13);
+    box-shadow: 0 2px 10px rgba(15,39,64,.07);
   }}
   div[data-testid="stVerticalBlockBorderWrapper"] *,
   div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stMetricLabel"],
@@ -90,18 +90,18 @@ def page_css(sky: dict) -> str:
     border-radius: 16px;
     padding: 1.1rem 1.3rem;
     backdrop-filter: blur(9px);
-    box-shadow: 0 6px 22px rgba(10,25,41,.13);
+    box-shadow: 0 2px 10px rgba(15,39,64,.07);
     color: var(--deep);
   }}
 
   /* ---- hero ---- */
   .hero {{
     display: block;
-    background: linear-gradient(135deg, rgba(255,255,255,.90), rgba(255,255,255,.70));
+    background: #ffffff;
     border: 1px solid var(--panel-brd);
     border-radius: 20px; padding: 1.3rem 1.6rem;
     backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(10,25,41,.16);
+    box-shadow: 0 3px 14px rgba(15,39,64,.09);
     color: var(--deep);
   }}
   .hero .num {{font-size: 3.6rem; font-weight: 800; line-height: .95;
@@ -184,7 +184,7 @@ def page_css(sky: dict) -> str:
     gap:.35rem; background: transparent;
   }}
   [data-testid="stTab"], .stTabs [data-baseweb="tab"] {{
-    background: rgba(255,255,255,.62); border-radius:10px 10px 0 0;
+    background: rgba(255,255,255,.75); border-radius:10px 10px 0 0;
     padding:.45rem 1rem; font-weight:600;
   }}
   [data-testid="stTab"] p, .stTabs [data-baseweb="tab"] p {{

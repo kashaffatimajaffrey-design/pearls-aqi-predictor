@@ -54,9 +54,13 @@ def describe(df: pd.DataFrame) -> dict:
     category_counts = aqi.apply(categorize).value_counts()
     unhealthy_hours = int((aqi >= 150).sum())
 
-    hourly = df.groupby(df["ts"].dt.hour)["aqi"].mean()
-    dow = df.groupby(df["ts"].dt.dayofweek)["aqi"].mean()
-    monthly = df.groupby(df["ts"].dt.month)["aqi"].mean()
+    # Local time, matching the calendar features the model actually uses.
+    # Reporting UTC hours here would say "peaks at 13:00" for a Karachi reader
+    # whose rush hour is 18:00, and disagree with hour_sin/hour_cos.
+    local = df["ts"].dt.tz_convert(config.TIMEZONE)
+    hourly = df.groupby(local.dt.hour)["aqi"].mean()
+    dow = df.groupby(local.dt.dayofweek)["aqi"].mean()
+    monthly = df.groupby(local.dt.month)["aqi"].mean()
 
     return {
         "rows": hours,
@@ -154,17 +158,17 @@ def plot_distribution(df: pd.DataFrame) -> str:
 
 def plot_seasonality(df: pd.DataFrame) -> str:
     fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-    df.groupby(df["ts"].dt.hour)["aqi"].mean().plot(ax=axes[0], marker="o", color="#2980b9")
+    df.groupby(df["ts"].dt.tz_convert(config.TIMEZONE).dt.hour)["aqi"].mean().plot(ax=axes[0], marker="o", color="#2980b9")
     axes[0].set_title("Mean AQI by hour of day")
     axes[0].set_xlabel("Hour (UTC)")
 
-    dow = df.groupby(df["ts"].dt.dayofweek)["aqi"].mean()
+    dow = df.groupby(df["ts"].dt.tz_convert(config.TIMEZONE).dt.dayofweek)["aqi"].mean()
     axes[1].bar(range(len(dow)), dow.values, color="#16a085")
     axes[1].set_xticks(range(7))
     axes[1].set_xticklabels(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])
     axes[1].set_title("Mean AQI by weekday")
 
-    monthly = df.groupby(df["ts"].dt.month)["aqi"].mean()
+    monthly = df.groupby(df["ts"].dt.tz_convert(config.TIMEZONE).dt.month)["aqi"].mean()
     axes[2].bar(monthly.index, monthly.values, color="#8e44ad")
     axes[2].set_title("Mean AQI by month")
     axes[2].set_xlabel("Month")
@@ -270,8 +274,8 @@ lets them dominate the gradient.
 
 ## 2. Temporal structure
 
-* **Daily cycle.** AQI peaks around **{stats['peak_hour']:02d}:00 UTC**
-  ({stats['peak_hour_aqi']}) and bottoms out at **{stats['cleanest_hour']:02d}:00 UTC**
+* **Daily cycle.** AQI peaks around **{stats['peak_hour']:02d}:00 local**
+  ({stats['peak_hour_aqi']}) and bottoms out at **{stats['cleanest_hour']:02d}:00 local**
   ({stats['cleanest_hour_aqi']}) -- a swing of
   {round(stats['peak_hour_aqi'] - stats['cleanest_hour_aqi'], 1)} AQI points. Hour-of-day is
   therefore encoded cyclically (sin/cos) so that 23:00 and 00:00 sit next to each
