@@ -25,7 +25,10 @@ FEATURE_VERSION = "v1"
 
 LAGS = [1, 2, 3, 6, 12, 24, 48, 72]
 ROLL_WINDOWS = [6, 12, 24, 72]
-LAG_BASE = ["aqi", "pm2_5", "pm10", "no2", "o3"]
+# Lagged because each is causally upstream of surface AQI: dust blows in,
+# ammonia converts to secondary aerosol over hours, and the mixing depth
+# earlier in the day sets how concentrated the air already is.
+LAG_BASE = ["aqi", "pm2_5", "pm10", "no2", "o3", "dust", "boundary_layer_height"]
 
 
 def _cyclical(df: pd.DataFrame, col: str, period: int) -> None:
@@ -109,6 +112,22 @@ def build_features(raw: pd.DataFrame, *, dropna: bool = True) -> pd.DataFrame:
         # Stagnant air traps particulates; this is the strongest weather signal.
         df["wind_speed_roll_24h"] = df["wind_speed"].rolling(24, min_periods=6).mean()
         df["stagnation"] = 1.0 / (1.0 + df["wind_speed"].astype(float))
+    if "boundary_layer_height" in df:
+        blh = df["boundary_layer_height"].astype(float)
+        df["blh_roll_mean_24h"] = blh.rolling(24, min_periods=6).mean()
+        df["blh_min_24h"] = blh.rolling(24, min_periods=6).min()
+        # Ventilation index = mixing depth x wind speed: the standard measure of
+        # how much air is actually available to dilute emissions. Low values are
+        # what turn ordinary emissions into a pollution episode.
+        if "wind_speed" in df:
+            df["ventilation_index"] = blh * df["wind_speed"].astype(float)
+            df["ventilation_roll_24h"] = df["ventilation_index"].rolling(
+                24, min_periods=6
+            ).mean()
+
+    if "dust" in df:
+        df["dust_change_24h"] = df["dust"].diff(24)
+
     if {"temperature", "humidity"}.issubset(df.columns):
         df["temp_humidity"] = df["temperature"] * df["humidity"] / 100.0
         df["temp_range_24h"] = (
@@ -140,9 +159,14 @@ def feature_columns(df: pd.DataFrame) -> list[str]:
         "ts", "city", "feature_version", "dominant_pollutant",
         "aqi_pm2_5", "aqi_pm10", "aqi_no2", "aqi_so2", "aqi_o3", "aqi_co",
     }
+    # Drop columns with no observed values at all -- a provider may simply not
+    # cover a variable at this location (CAMS has no ammonia for Karachi), and
+    # an empty column is noise that only creates alignment hazards downstream.
     return [
         c for c in df.columns
-        if c not in exclude and pd.api.types.is_numeric_dtype(df[c])
+        if c not in exclude
+        and pd.api.types.is_numeric_dtype(df[c])
+        and not df[c].isna().all()
     ]
 
 

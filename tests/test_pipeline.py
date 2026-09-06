@@ -170,3 +170,50 @@ class TestTrainingHelpers:
         scores = _score(y, y + rng.normal(0, .1, (50, 3)))
         assert set(scores["per_horizon"]) == {f"{h}h" for h in config.HORIZONS}
         assert scores["rmse"] > 0
+
+
+class TestColumnAlignment:
+    """Regression tests for a real bug: an all-NaN column made SimpleImputer
+    silently drop it, changing the matrix width so the persistence baseline read
+    AQI from the wrong column and its RMSE went from 10.5 to 60.4."""
+
+    @staticmethod
+    def _xy_with_empty_column(n=200):
+        rng = np.random.default_rng(7)
+        X = pd.DataFrame({
+            "empty_feature": np.full(n, np.nan),   # provider covers nothing here
+            "aqi": rng.uniform(50, 150, n),
+            "other": rng.normal(size=n),
+        })
+        y = np.column_stack([X["aqi"].to_numpy()] * 3)
+        return X, y
+
+    def test_imputer_preserves_column_count(self):
+        from src.models import build_model
+
+        X, y = self._xy_with_empty_column()
+        model = build_model("ridge").fit(X, y)
+        transformed = model.named_steps["impute"].transform(X)
+        assert transformed.shape[1] == X.shape[1], "imputer must not drop columns"
+
+    def test_persistence_baseline_survives_an_empty_column(self):
+        from src.models import build_model
+
+        X, y = self._xy_with_empty_column()
+        model = build_model("baseline_persistence")
+        model.named_steps["model"].aqi_index = list(X.columns).index("aqi")
+        model.fit(X, y)
+        # Persistence must reproduce the current AQI exactly.
+        assert np.allclose(model.predict(X)[:, 0], X["aqi"].to_numpy())
+
+    def test_feature_columns_excludes_all_nan(self):
+        from src.features import feature_columns
+
+        df = pd.DataFrame({
+            "ts": pd.date_range("2024-01-01", periods=5, freq="h", tz="UTC"),
+            "aqi": [1.0, 2, 3, 4, 5],
+            "never_observed": [np.nan] * 5,
+        })
+        cols = feature_columns(df)
+        assert "never_observed" not in cols
+        assert "aqi" in cols

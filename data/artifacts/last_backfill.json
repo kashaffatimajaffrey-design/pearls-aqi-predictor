@@ -1,11 +1,11 @@
 {
-  "backfilled_at": "2026-09-06T14:46:44.527502+00:00",
+  "backfilled_at": "2026-09-06T15:13:31.329194+00:00",
   "requested_days": 365,
   "source": "openmeteo",
   "feature_store": "local",
   "raw_rows": 8856,
-  "feature_rows": 8784,
-  "coverage_start": "2025-09-05 15:00:00+00:00",
-  "coverage_end": "2026-09-06 14:00:00+00:00",
-  "coverage_pct": 100.3
+  "feature_rows": 8670,
+  "coverage_start": "2025-09-05 16:00:00+00:00",
+  "coverage_end": "2026-09-06 15:00:00+00:00",
+  "coverage_pct": 99.0
 }

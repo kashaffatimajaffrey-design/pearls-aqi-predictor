@@ -28,7 +28,10 @@ CITY = os.getenv("AQI_CITY", "Karachi")
 COUNTRY = os.getenv("AQI_COUNTRY", "PK")
 LAT = float(os.getenv("AQI_LAT", "24.8607"))
 LON = float(os.getenv("AQI_LON", "67.0011"))
-TIMEZONE = os.getenv("AQI_TIMEZONE", "UTC")
+# Calendar features and dashboard labels both use local time: rush-hour and
+# weekday effects are local phenomena, and "AQI peaks at 13:00" is misleading
+# to a Karachi reader when 13:00 UTC is 18:00 for them.
+TIMEZONE = os.getenv("AQI_TIMEZONE", "Asia/Karachi")
 
 # ------------------------------------------------------------------ source --
 # "auto"        -> OpenWeather if a key is present, else Open-Meteo
@@ -55,15 +58,40 @@ BACKFILL_DAYS = int(os.getenv("AQI_BACKFILL_DAYS", "365"))
 TEST_SIZE_HOURS = int(os.getenv("AQI_TEST_HOURS", str(24 * 21)))  # last 3 weeks held out
 RANDOM_STATE = 42
 
+# Pollutants that contribute to the EPA AQI itself.
 POLLUTANTS = ["pm2_5", "pm10", "no2", "so2", "o3", "co"]
+
+# Auxiliary atmospheric tracers. These do NOT feed the AQI calculation -- they
+# are predictors of it:
+#   dust                    mineral dust; a major PM10 driver for coastal/arid
+#                           Karachi, and largely independent of local traffic
+#   ammonia                 precursor that forms ammonium sulfate/nitrate, i.e.
+#                           secondary PM2.5 that appears hours after emission
+#   aerosol_optical_depth   total column aerosol loading from satellite
+#   methane                 greenhouse gas; carried as a tracer of local
+#                           combustion/landfill activity. Not an AQI pollutant
+#                           and expected to be weak -- included so SHAP can rank
+#                           it empirically rather than assuming either way.
+AUX_TRACERS = ["dust", "ammonia", "aerosol_optical_depth", "methane"]
+
 WEATHER_COLS = [
     "temperature", "humidity", "pressure",
     "wind_speed", "wind_direction", "precipitation",
+    # Mixing depth: the vertical volume pollutants dilute into. A shallow night
+    # -time boundary layer concentrates the same emissions into a fraction of
+    # the air, which is the single most causal meteorological control on
+    # surface concentration.
+    "boundary_layer_height",
 ]
+
+ALL_MEASURE_COLS = POLLUTANTS + AUX_TRACERS + WEATHER_COLS
 
 # ---------------------------------------------------------------- alerts ----
 ALERT_AQI_THRESHOLD = int(os.getenv("AQI_ALERT_THRESHOLD", "150"))  # Unhealthy
 ALERT_WEBHOOK_URL = os.getenv("AQI_ALERT_WEBHOOK", "").strip()      # Slack/Discord
+# Re-send an unchanged alert only after this many hours. Without a cooldown the
+# hourly pipeline turns one pollution episode into dozens of identical messages.
+ALERT_COOLDOWN_HOURS = int(os.getenv("AQI_ALERT_COOLDOWN_HOURS", "6"))
 
 # ------------------------------------------------------------ monitoring ----
 METRICS_PORT = int(os.getenv("AQI_METRICS_PORT", "8000"))

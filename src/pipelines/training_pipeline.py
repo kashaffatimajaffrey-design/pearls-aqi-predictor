@@ -34,6 +34,10 @@ from ..store import get_feature_store, get_model_registry
 
 log = logging.getLogger(__name__)
 
+
+class ModelRejected(RuntimeError):
+    """Raised when a freshly trained model fails the promotion gate."""
+
 DEFAULT_MODELS = [
     "baseline_persistence",
     "ridge",
@@ -103,7 +107,7 @@ def chronological_split(df: pd.DataFrame, test_hours: int) -> tuple[pd.DataFrame
 
 # ------------------------------------------------------------------- run -----
 def run(models: list[str] | None = None, test_hours: int | None = None,
-        skip_shap: bool = False) -> dict:
+        skip_shap: bool = False, force: bool = False) -> dict:
     started = datetime.now(UTC)
     models = models or DEFAULT_MODELS
     test_hours = test_hours or config.TEST_SIZE_HOURS
@@ -169,12 +173,25 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
         None if baseline_rmse in (None, 0)
         else round(100 * (baseline_rmse - best_metrics["rmse"]) / baseline_rmse, 1)
     )
+    # Promotion gate. A model that cannot beat "tomorrow looks like today" has
+    # learned nothing useful, and shipping it silently replaces a working
+    # forecast with a worse one. Refuse the promotion and keep whatever is
+    # already in production, unless explicitly overridden.
     if not beats_baseline:
-        log.warning(
-            "best model (%s, RMSE %.2f) does not beat persistence (%.2f) -- "
-            "registering anyway but flagging it in metadata",
+        log.error(
+            "best model (%s, RMSE %.2f) does not beat persistence (%.2f)",
             best_name, best_metrics["rmse"], baseline_rmse,
         )
+        if not force:
+            existing = get_model_registry().production_path()
+            if existing is not None:
+                raise ModelRejected(
+                    f"{best_name} (RMSE {best_metrics['rmse']:.2f}) failed to beat the "
+                    f"persistence baseline (RMSE {baseline_rmse:.2f}); keeping the "
+                    f"current production model. Re-run with force=True to override."
+                )
+            log.warning("no existing production model -- promoting anyway so the "
+                        "system has something to serve")
 
     # --------------------------------------------------------------- shap ---
     shap_summary = None
@@ -270,6 +287,8 @@ def main() -> dict:
                         help=f"subset of: {' '.join(DEFAULT_MODELS)}")
     parser.add_argument("--test-hours", type=int, default=None)
     parser.add_argument("--skip-shap", action="store_true")
+    parser.add_argument("--force", action="store_true",
+                        help="promote the winner even if it loses to the baseline")
     parser.add_argument("--fast", action="store_true",
                         help="skip the TensorFlow models (quick CI smoke run)")
     args = parser.parse_args()
@@ -279,7 +298,8 @@ def main() -> dict:
     if args.fast and not models:
         models = [m for m in DEFAULT_MODELS if not m.startswith("tf_")]
 
-    summary = run(models=models, test_hours=args.test_hours, skip_shap=args.skip_shap)
+    summary = run(models=models, test_hours=args.test_hours,
+                  skip_shap=args.skip_shap, force=args.force)
     print(json.dumps(summary, indent=2, default=str))
     return summary
 

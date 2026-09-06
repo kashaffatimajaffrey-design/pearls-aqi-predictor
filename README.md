@@ -103,6 +103,72 @@ code edits.
 
 ---
 
+## Data sources
+
+| Source | What it provides | Key? | Role |
+| --- | --- | --- | --- |
+| **Open-Meteo Air Quality** (CAMS) | PM2.5, PM10, NO₂, SO₂, O₃, CO, dust, ammonia, AOD, methane — hourly | No | **Default.** Pollutants + tracers |
+| **Open-Meteo Forecast / Archive** (ERA5) | Temperature, humidity, pressure, wind, precipitation, boundary-layer height | No | **Default.** Meteorology |
+| **OpenWeather Air Pollution History** | Same six AQI pollutants, hourly, back to Nov 2020 | Yes | Alternative pollutant source |
+| **AQICN / WAQI** | Nearest ground-station reading, current only | Yes | Live cross-check on the dashboard |
+
+### An important caveat about provenance
+
+Open-Meteo's air-quality data is **CAMS model output, not ground-station
+measurement** — a reanalysis/forecast product at roughly 11 km (Europe) to 40 km
+(global) resolution. So the system is, strictly, learning to forecast a physical
+model's estimate of air quality rather than a sensor's reading of it.
+
+That is a reasonable and common basis for this kind of project — CAMS assimilates
+satellite and surface observations, and it gives gapless hourly history that no
+free station API offers — but it should be stated rather than glossed over. The
+AQICN cross-check exists partly to make the gap between the two visible on the
+dashboard. Adding **OpenAQ** (free, real station measurements) for validation is
+the natural next step.
+
+### Variables carried beyond the six AQI pollutants
+
+These do not feed the AQI calculation; they are predictors of it.
+
+| Variable | Why | SHAP rank (+24 h) |
+| --- | --- | --- |
+| `boundary_layer_height` → `ventilation_index` | Mixing depth × wind = the air volume available to dilute emissions. The most causal meteorological control on surface concentration. | #13, #18 |
+| `aerosol_optical_depth` | Total column aerosol loading | **#6** |
+| `dust` | Mineral dust — a major PM10 driver for coastal, arid Karachi, and largely independent of local traffic | #8 (as `dust_change_24h`) |
+| `ammonia` | PM2.5 precursor (forms ammonium nitrate/sulfate) | Not ranked — CAMS has **no ammonia coverage at this location**, so the column is dropped automatically |
+| `methane` | Greenhouse gas, carried as a tracer of local combustion/landfill activity | Not in the top 25 — measured, then judged |
+
+The last two rows are the point of including them: rather than arguing about
+whether a variable matters, carry it and let SHAP rank it. Methane is a
+greenhouse gas but not an AQI pollutant, and the data agrees it adds nothing
+here. Ammonia is genuinely relevant chemistry but simply is not available for
+Karachi, and the pipeline drops all-empty columns rather than pretending.
+
+### Considered and deliberately excluded
+
+| Candidate | Verdict |
+| --- | --- |
+| **Noise pollution** | No causal link to AQI and no hourly feed. Correlates with traffic, but traffic is better measured directly. |
+| **Industrial emissions inventories** | Published annually and static per city. A constant column adds nothing to a single-city time-series forecast; it would only matter for a multi-city model. |
+| **Climate-change indicators** | Wrong time scale entirely — decadal trend versus a 72-hour forecast. The annual cycle is already captured by the seasonal features. |
+| **Stratospheric ozone ("the ozone layer")** | A different quantity from the pollutant. Ground-level O₃ is already used; stratospheric column ozone does not drive surface AQI. |
+| **CO₂ emissions** | Not an AQI pollutant and no short-term effect on air quality. CO (carbon *mon*oxide) is a genuine AQI pollutant and is already included. |
+| **Vehicle/traffic counts** | Genuinely valuable — likely the largest real driver in Karachi — but no free hourly feed. Currently proxied by hour-of-day, day-of-week and weekend features, which is the standard substitute. A paid TomTom or Google traffic feed would be the real version. |
+
+### Highest-value additions still on the table
+
+1. **Forecast weather instead of current weather.** Open-Meteo serves 120 h of
+   free forecast; using predicted meteorology at t+24/48/72 rather than
+   current-state meteorology is almost certainly the single biggest accuracy win
+   available.
+2. **NASA FIRMS active-fire data** (free). Crop-residue burning drives severe
+   episodes across South Asia and is invisible to every feature currently used.
+3. **OpenAQ ground stations** (free) to validate against real measurements
+   rather than model output.
+4. **Local holiday / Ramadan calendar**, which materially shifts traffic patterns.
+
+---
+
 ## The forecasting problem
 
 **Target.** AQI at t+24h, t+48h and t+72h — three separate heads, predicted

@@ -25,11 +25,12 @@ import pandas as pd
 import requests
 
 from .. import config
+from .validation import validate
 
 log = logging.getLogger(__name__)
 
 TIMEOUT = 45
-NUMERIC_COLS = config.POLLUTANTS + config.WEATHER_COLS
+NUMERIC_COLS = config.ALL_MEASURE_COLS
 
 
 def _empty() -> pd.DataFrame:
@@ -47,6 +48,13 @@ def _finalize(df: pd.DataFrame) -> pd.DataFrame:
             df[c] = pd.NA
         df[c] = pd.to_numeric(df[c], errors="coerce")
     df = df[["ts"] + NUMERIC_COLS]
+
+    # Gate every source through the same plausibility checks, so a broken
+    # upstream reading cannot reach feature engineering or the training set.
+    df, report = validate(df)
+    if report.get("warnings"):
+        log.warning("data validation warnings: %s", report["warnings"])
+
     df = df.dropna(subset=["pm2_5"])
     return df.drop_duplicates(subset="ts").sort_values("ts").reset_index(drop=True)
 
@@ -56,10 +64,11 @@ _OM_AQ = "https://air-quality-api.open-meteo.com/v1/air-quality"
 _OM_ARCHIVE = "https://archive-api.open-meteo.com/v1/archive"
 _OM_FORECAST = "https://api.open-meteo.com/v1/forecast"
 
-_OM_AQ_VARS = "pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone"
+_OM_AQ_VARS = ("pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,"
+               "dust,ammonia,aerosol_optical_depth,methane")
 _OM_WX_VARS = (
     "temperature_2m,relative_humidity_2m,surface_pressure,"
-    "wind_speed_10m,wind_direction_10m,precipitation"
+    "wind_speed_10m,wind_direction_10m,precipitation,boundary_layer_height"
 )
 
 _OM_AQ_RENAME = {
@@ -69,6 +78,10 @@ _OM_AQ_RENAME = {
     "nitrogen_dioxide": "no2",
     "sulphur_dioxide": "so2",
     "ozone": "o3",
+    "dust": "dust",
+    "ammonia": "ammonia",
+    "aerosol_optical_depth": "aerosol_optical_depth",
+    "methane": "methane",
 }
 _OM_WX_RENAME = {
     "temperature_2m": "temperature",
@@ -77,6 +90,7 @@ _OM_WX_RENAME = {
     "wind_speed_10m": "wind_speed",
     "wind_direction_10m": "wind_direction",
     "precipitation": "precipitation",
+    "boundary_layer_height": "boundary_layer_height",
 }
 
 # Open-Meteo serves the forecast endpoints (with past_days) fresher than the

@@ -1,0 +1,38 @@
+# Dashboard / API deployment dependencies -- NO TensorFlow.
+#
+# Streamlit Community Cloud allocates roughly 1 GB; TensorFlow alone is ~1.5 GB,
+# so installing the full requirements.txt there fails or times out. The serving
+# layer does not need it: TensorFlow is imported lazily and only when the
+# production bundle actually contains a `keras_model.keras` (i.e. when a TF model
+# won the last comparison). Trees usually win on this dataset, so the deployed
+# app stays light.
+#
+# Point Streamlit Community Cloud at this file, not requirements.txt.
+# If a TF model is ever promoted, either swap this for requirements.txt on a
+# larger host, or pin training to the non-TF candidates.
+
+numpy>=1.26,<3
+pandas>=2.2
+pyarrow>=16.0
+requests>=2.32
+python-dotenv>=1.0
+joblib>=1.4
+tzdata>=2024.1            # zoneinfo has no bundled database on Windows
+
+scikit-learn>=1.5
+xgboost>=2.1
+
+shap>=0.46
+lime>=0.2.0.1
+
+streamlit>=1.38
+plotly>=5.24
+flask>=3.0
+flask-cors>=5.0
+gunicorn>=23.0 ; sys_platform != "win32"
+waitress>=3.0 ; sys_platform == "win32"
+
+prometheus-client>=0.21
+
+matplotlib>=3.9
+seaborn>=0.13

@@ -1,0 +1,34 @@
+{
+  "observation:now:Unhealthy for Sensitive Groups": {
+    "sent_at": "2026-09-06T15:10:14.200027+00:00",
+    "severity": 2
+  },
+  "observation:now:Unhealthy": {
+    "sent_at": "2026-09-06T15:10:14.209474+00:00",
+    "severity": 3
+  },
+  "observation:now:Hazardous": {
+    "sent_at": "2026-09-06T15:10:14.220291+00:00",
+    "severity": 5
+  },
+  "forecast:48:Unhealthy": {
+    "sent_at": "2026-09-06T15:10:14.234780+00:00",
+    "severity": 3
+  },
+  "forecast:72:Very Unhealthy": {
+    "sent_at": "2026-09-06T15:10:14.234780+00:00",
+    "severity": 4
+  },
+  "forecast:72:Unhealthy": {
+    "sent_at": "2026-09-06T15:10:14.243144+00:00",
+    "severity": 3
+  },
+  "forecast:24:Unhealthy": {
+    "sent_at": "2026-09-06T15:10:14.251686+00:00",
+    "severity": 3
+  },
+  "forecast:48:Hazardous": {
+    "sent_at": "2026-09-06T15:10:14.251686+00:00",
+    "severity": 5
+  }
+}

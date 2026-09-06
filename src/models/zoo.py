@@ -163,7 +163,10 @@ class KerasRegressorWrapper(BaseEstimator, RegressorMixin):
 # ------------------------------------------------------------- builders ----
 def _wrap(estimator, *, scale: bool, multioutput: bool) -> Pipeline:
     """Impute -> (optionally) scale -> estimator, as one picklable object."""
-    steps = [("impute", SimpleImputer(strategy="median"))]
+    # keep_empty_features is load-bearing: without it SimpleImputer silently
+    # DROPS an all-NaN column, changing the matrix width and invalidating any
+    # positional feature index downstream (this cost us a broken baseline once).
+    steps = [("impute", SimpleImputer(strategy="median", keep_empty_features=True))]
     if scale:
         steps.append(("scale", StandardScaler()))
     if multioutput:

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -65,6 +65,65 @@ def _alert(kind: str, aqi: float, when, *, horizon_hours: int | None = None) -> 
     }
 
 
+def _alert_key(alert: dict) -> str:
+    """Identity of an alert for deduplication.
+
+    Keyed on kind, horizon and severity band -- deliberately NOT on the exact
+    AQI value, so a pollution episode drifting from 171 to 174 does not read as
+    a new event.
+    """
+    return f"{alert['kind']}:{alert.get('horizon_hours') or 'now'}:{alert['category']}"
+
+
+def _suppressed(alerts: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Split alerts into (to_send, suppressed) using the cooldown window.
+
+    Without this, the hourly pipeline re-sends an identical webhook every run:
+    a three-day episode becomes 72 identical Slack messages and people mute the
+    channel, which is worse than no alerting at all. An alert re-fires only
+    after ALERT_COOLDOWN_HOURS, or immediately if its severity has worsened.
+    """
+    state = _load_alert_state()
+    now = datetime.now(UTC)
+    cooldown = timedelta(hours=config.ALERT_COOLDOWN_HOURS)
+
+    to_send, suppressed = [], []
+    for alert in alerts:
+        key = _alert_key(alert)
+        previous = state.get(key)
+        escalated = previous is not None and alert["severity"] > previous.get("severity", 0)
+
+        if previous and not escalated:
+            try:
+                if now - datetime.fromisoformat(previous["sent_at"]) < cooldown:
+                    suppressed.append(alert)
+                    continue
+            except (ValueError, KeyError):
+                pass  # unparseable state -> treat as never sent
+
+        to_send.append(alert)
+        state[key] = {"sent_at": now.isoformat(), "severity": alert["severity"]}
+
+    _save_alert_state(state)
+    return to_send, suppressed
+
+
+def _load_alert_state() -> dict:
+    path = config.ARTIFACT_DIR / "alert_state.json"
+    if path.exists():
+        try:
+            return json.loads(path.read_text())
+        except json.JSONDecodeError:
+            pass
+    return {}
+
+
+def _save_alert_state(state: dict) -> None:
+    (config.ARTIFACT_DIR / "alert_state.json").write_text(
+        json.dumps(state, indent=2, default=str)
+    )
+
+
 def evaluate_observation_alert(aqi: float, ts) -> dict | None:
     """Alert on the latest measured AQI, or None if it is below threshold."""
     if aqi is None or aqi < config.ALERT_AQI_THRESHOLD:
@@ -75,7 +134,11 @@ def evaluate_observation_alert(aqi: float, ts) -> dict | None:
 
 
 def evaluate_forecast_alerts(forecasts: list[dict]) -> list[dict]:
-    """Alert on any forecast horizon at or above the threshold."""
+    """Alert on any forecast horizon at or above the threshold.
+
+    Returns every breaching horizon so the dashboard can display them all;
+    `dispatch` decides which are actually worth sending to a webhook.
+    """
     alerts = [
         _alert("forecast", f["aqi"], f["valid_at"], horizon_hours=f["horizon_hours"])
         for f in forecasts
@@ -87,9 +150,18 @@ def evaluate_forecast_alerts(forecasts: list[dict]) -> list[dict]:
 
 
 def dispatch(alerts: list[dict]) -> bool:
-    """Send alerts to the configured webhook. Returns True if delivered."""
+    """Send alerts to the configured webhook, honouring the cooldown.
+
+    Returns True if something was actually delivered.
+    """
     for a in alerts:
         log.warning("AQI ALERT: %s", a["message"])
+    append_history(alerts)
+
+    alerts, held = _suppressed(alerts)
+    if held:
+        log.info("%d alert(s) suppressed by the %dh cooldown",
+                 len(held), config.ALERT_COOLDOWN_HOURS)
 
     if not alerts or not config.ALERT_WEBHOOK_URL:
         return False
