@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import shutil
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -47,6 +48,11 @@ DEFAULT_MODELS = [
     "tf_mlp",
     "tf_lstm",
 ]
+
+# Trained through a separate path: these consume a 3-D (samples, hours,
+# channels) tensor, which the sklearn Pipeline 2-D contract cannot carry.
+# Scored on the identical hold-out window so the comparison stays fair.
+SEQUENCE_MODELS = ["tf_seq_lstm", "tf_seq_lstm_nofuture"]
 
 
 # ------------------------------------------------------------------ utils ---
@@ -105,6 +111,81 @@ def chronological_split(df: pd.DataFrame, test_hours: int) -> tuple[pd.DataFrame
     return df.iloc[:cut].copy(), df.iloc[cut:].copy()
 
 
+
+def _train_sequence_models(labelled, names, split_ts, results, fitted):
+    """Train the encoder-decoder LSTMs and score them on the same test window.
+
+    The split is applied by timestamp rather than row position, because building
+    sequences drops the first `lookback` rows and shifts every index.
+    """
+    from ..models.sequence import SequenceForecaster, build_sequences
+
+    for name in names:
+        use_future = not name.endswith("_nofuture")
+        log.info("--- training %s (use_future=%s) ---", name, use_future)
+        t0 = datetime.now(UTC)
+        try:
+            X_past, X_future, y, ts, seq_cols, fut_cols = build_sequences(
+                labelled, config.TARGET_COLS, use_future=use_future
+            )
+            mask = np.asarray(ts < pd.Timestamp(split_ts))
+            if mask.sum() < 200 or (~mask).sum() < 24:
+                raise ValueError("not enough sequences either side of the split")
+
+            model = SequenceForecaster(use_future=use_future)
+            model.fit(X_past[mask], X_future[mask], y[mask])
+
+            test_metrics = _score(y[~mask], model.predict(X_past[~mask], X_future[~mask]))
+            train_metrics = _score(y[mask], model.predict(X_past[mask], X_future[mask]))
+
+            results[name] = {
+                "status": "ok",
+                "train": train_metrics,
+                "test": test_metrics,
+                "fit_seconds": round((datetime.now(UTC) - t0).total_seconds(), 1),
+                "architecture": "encoder-decoder LSTM",
+                "n_params": model.n_params,
+                "sequence_channels": len(seq_cols),
+                "future_channels": len(fut_cols),
+                "n_test_sequences": int((~mask).sum()),
+            }
+            fitted[name] = model
+            log.info("%-22s test RMSE %6.2f  MAE %6.2f  R2 %6.3f  (%d params)",
+                     name, test_metrics["rmse"], test_metrics["mae"],
+                     test_metrics["r2"], model.n_params)
+        except Exception as exc:
+            log.warning("%s failed: %s", name, exc)
+            results[name] = {"status": "failed", "error": str(exc)}
+
+
+
+def _sequence_verdict(trained: dict, seq_winner: str | None, best_metrics: dict) -> dict | None:
+    """Report how the sequence models fared against the promoted tabular model.
+
+    They are compared but not promotable (save_bundle assumes an sklearn
+    Pipeline), so if one wins we say so explicitly rather than quietly shipping
+    the runner-up.
+    """
+    if seq_winner is None:
+        return None
+    seq = trained[seq_winner]["test"]
+    beat = seq["rmse"] < best_metrics["rmse"]
+    if beat:
+        log.warning(
+            "%s (RMSE %.2f) BEAT the promoted tabular model (RMSE %.2f) but is "
+            "not yet promotable -- bundle serialisation needs a sequence path",
+            seq_winner, seq["rmse"], best_metrics["rmse"],
+        )
+    return {
+        "best_sequence_model": seq_winner,
+        "rmse": seq["rmse"],
+        "r2": seq["r2"],
+        "beat_promoted_model": bool(beat),
+        "promotable": False,
+        "n_params": trained[seq_winner].get("n_params"),
+    }
+
+
 # ------------------------------------------------------------------- run -----
 def run(models: list[str] | None = None, test_hours: int | None = None,
         skip_shap: bool = False, force: bool = False) -> dict:
@@ -132,7 +213,7 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
     results: dict[str, dict] = {}
     fitted: dict[str, object] = {}
 
-    for name in models:
+    for name in [m for m in models if m not in SEQUENCE_MODELS]:
         log.info("--- training %s ---", name)
         t0 = datetime.now(UTC)
         try:
@@ -159,12 +240,26 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
             log.warning("%s failed: %s", name, exc)
             results[name] = {"status": "failed", "error": str(exc)}
 
+    seq_names = [m for m in models if m in SEQUENCE_MODELS]
+    if seq_names:
+        _train_sequence_models(labelled, seq_names, test_df["ts"].min(), results, fitted)
+
     trained = {k: v for k, v in results.items() if v.get("status") == "ok"}
     if not trained:
         raise RuntimeError("every candidate model failed to train")
 
     baseline_rmse = trained.get("baseline_persistence", {}).get("test", {}).get("rmse")
-    candidates = {k: v for k, v in trained.items() if k != "baseline_persistence"} or trained
+    # Sequence models are compared but not yet promotable: save_bundle assumes an
+    # sklearn Pipeline. If one wins, that is reported loudly rather than shipped.
+    promotable = {
+        k: v for k, v in trained.items()
+        if k != "baseline_persistence" and k not in SEQUENCE_MODELS
+    }
+    seq_winner = min(
+        (k for k in trained if k in SEQUENCE_MODELS),
+        key=lambda k: trained[k]["test"]["rmse"], default=None,
+    )
+    candidates = promotable or trained
     best_name = min(candidates, key=lambda k: candidates[k]["test"]["rmse"])
     best_metrics = results[best_name]["test"]
 
@@ -215,6 +310,7 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
         },
         "metrics_per_horizon": best_metrics["per_horizon"],
         "baseline_rmse": baseline_rmse,
+        "sequence_model": _sequence_verdict(trained, seq_winner, best_metrics),
         "all_results": results,
         "feature_columns": feat_cols,
         "target_columns": config.TARGET_COLS,
@@ -233,10 +329,11 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
         "shap_top_features": (shap_summary or {}).get("top_features"),
     }
 
-    staging = Path(config.MODEL_DIR) / "_staging"
+    staging = Path(config.MODEL_DIR) / f"_staging_{started:%Y%m%d%H%M%S}"
     save_bundle(fitted[best_name], metadata, staging)
     registry = get_model_registry()
     version = registry.push(staging, metadata)
+    shutil.rmtree(staging, ignore_errors=True)
 
     # Comparison table -- consumed by the dashboard's "Model Comparison" tab.
     comparison = [
@@ -284,7 +381,7 @@ def run(models: list[str] | None = None, test_hours: int | None = None,
 def main() -> dict:
     parser = argparse.ArgumentParser(description="Daily AQI training pipeline")
     parser.add_argument("--models", nargs="*", default=None,
-                        help=f"subset of: {' '.join(DEFAULT_MODELS)}")
+                        help=f"subset of: {' '.join(DEFAULT_MODELS + SEQUENCE_MODELS)}")
     parser.add_argument("--test-hours", type=int, default=None)
     parser.add_argument("--skip-shap", action="store_true")
     parser.add_argument("--force", action="store_true",

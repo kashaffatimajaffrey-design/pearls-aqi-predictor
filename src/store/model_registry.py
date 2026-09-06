@@ -68,8 +68,8 @@ class LocalModelRegistry(BaseModelRegistry):
         version = self.next_version()
         target = self.root / version
         if target.exists():
-            shutil.rmtree(target)
-        shutil.copytree(bundle_dir, target)
+            shutil.rmtree(target, ignore_errors=True)
+        shutil.copytree(bundle_dir, target, dirs_exist_ok=True)
 
         metadata = {
             **metadata,
@@ -83,8 +83,8 @@ class LocalModelRegistry(BaseModelRegistry):
         # GitHub Actions checkout both handle copies predictably.
         prod = self.root / PRODUCTION_LINK
         if prod.exists():
-            shutil.rmtree(prod)
-        shutil.copytree(target, prod)
+            shutil.rmtree(prod, ignore_errors=True)
+        shutil.copytree(target, prod, dirs_exist_ok=True)
 
         log.info("registered model %s (production updated)", version)
         return version

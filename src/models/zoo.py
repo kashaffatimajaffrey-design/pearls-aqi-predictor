@@ -235,7 +235,9 @@ def save_bundle(pipeline, metadata: dict, out_dir: Path) -> Path:
     """Persist estimator + metadata to a self-contained directory."""
     out_dir = Path(out_dir)
     if out_dir.exists():
-        shutil.rmtree(out_dir)
+        # OneDrive and AV scanners transiently lock files on Windows; a failed
+        # cleanup must not discard a training run that already succeeded.
+        shutil.rmtree(out_dir, ignore_errors=True)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     keras_step = _keras_step(pipeline)
