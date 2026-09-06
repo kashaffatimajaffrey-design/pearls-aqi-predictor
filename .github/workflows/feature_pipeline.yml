@@ -26,20 +26,23 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
+          cache-dependency-path: requirements-hourly.txt
 
       - name: Install runtime dependencies
-        # The hourly job needs no ML frameworks -- keep it fast and cheap.
+        # Narrower than requirements.txt (no TensorFlow/Streamlit/plotting) so
+        # the 24x/day job stays cheap, but it must include the sklearn stack:
+        # the forecast-refresh step unpickles a Pipeline from the registry.
         run: |
           python -m pip install --upgrade pip
-          pip install pandas numpy pyarrow requests python-dotenv prometheus-client
+          pip install -r requirements-hourly.txt
 
       - name: Run feature pipeline
         env:
@@ -54,7 +57,11 @@ jobs:
         run: python -m src.pipelines.feature_pipeline --hours ${{ inputs.hours || '168' }}
 
       - name: Refresh forecast artifact
-        continue-on-error: true      # no model yet on a first run is not a failure
+        # continue-on-error is for the genuine first-run case (no model
+        # registered yet). It is NOT a licence to ignore failures: check the
+        # run annotations, because a failure here still surfaces there even
+        # though the step reports green.
+        continue-on-error: true
         env:
           AQI_CITY: ${{ vars.AQI_CITY || 'Karachi' }}
           AQI_LAT: ${{ vars.AQI_LAT || '24.8607' }}

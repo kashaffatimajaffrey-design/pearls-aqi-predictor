@@ -1,0 +1,23 @@
+# Dependencies for the hourly feature pipeline.
+#
+# Deliberately narrower than requirements.txt -- no TensorFlow, no plotting, no
+# Streamlit -- so the job that runs 24x/day stays fast and cheap. But it DOES
+# need the sklearn stack: after ingesting features the job refreshes the
+# forecast, and that unpickles a scikit-learn Pipeline from the model registry.
+#
+# Getting this wrong is what made the first scheduled run emit "exit code 1"
+# behind a continue-on-error, so the list is explicit and pinned to a file
+# rather than typed inline (which also lets setup-python cache it).
+
+numpy>=1.26,<3
+pandas>=2.2
+pyarrow>=16.0
+requests>=2.32
+python-dotenv>=1.0
+tzdata>=2024.1
+prometheus-client>=0.21
+
+# Required to load the production model bundle.
+joblib>=1.4
+scikit-learn>=1.5
+xgboost>=2.1
