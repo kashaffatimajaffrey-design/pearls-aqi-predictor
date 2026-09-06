@@ -5,27 +5,27 @@
     "lat": 24.8607,
     "lon": 67.0011
   },
-  "generated_at": "2026-09-06T18:18:34.722993+00:00",
-  "as_of": "2026-09-06T17:00:00+00:00",
+  "generated_at": "2026-09-06T20:06:45.896753+00:00",
+  "as_of": "2026-09-06T20:00:00+00:00",
   "current": {
     "aqi": 65.0,
     "category": "Moderate",
     "color": "#ffff00",
     "dominant_pollutant": "pm2_5",
-    "pm2_5": 13.6,
-    "pm10": 25.6,
-    "temperature": 26.4,
-    "humidity": 89.0,
-    "wind_speed": 14.7
+    "pm2_5": 12.7,
+    "pm10": 24.6,
+    "temperature": 25.9,
+    "humidity": 91.0,
+    "wind_speed": 13.3
   },
   "forecast": [
     {
       "horizon_hours": 24,
       "horizon_days": 1,
-      "valid_at": "2026-09-07T17:00:00+00:00",
-      "aqi": 68.7,
-      "aqi_lower": 62.3,
-      "aqi_upper": 75.1,
+      "valid_at": "2026-09-07T20:00:00+00:00",
+      "aqi": 68.3,
+      "aqi_lower": 61.9,
+      "aqi_upper": 74.7,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
@@ -35,10 +35,10 @@
     {
       "horizon_hours": 48,
       "horizon_days": 2,
-      "valid_at": "2026-09-08T17:00:00+00:00",
-      "aqi": 72.9,
-      "aqi_lower": 62.5,
-      "aqi_upper": 83.2,
+      "valid_at": "2026-09-08T20:00:00+00:00",
+      "aqi": 74.0,
+      "aqi_lower": 63.6,
+      "aqi_upper": 84.4,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
@@ -48,10 +48,10 @@
     {
       "horizon_hours": 72,
       "horizon_days": 3,
-      "valid_at": "2026-09-09T17:00:00+00:00",
-      "aqi": 77.7,
-      "aqi_lower": 65.6,
-      "aqi_upper": 89.7,
+      "valid_at": "2026-09-09T20:00:00+00:00",
+      "aqi": 81.3,
+      "aqi_lower": 69.3,
+      "aqi_upper": 93.3,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
@@ -68,5 +68,5 @@
     "r2": 0.36512422530435756
   },
   "alerts": [],
-  "data_source": "openweather"
+  "data_source": "openmeteo"
 }
