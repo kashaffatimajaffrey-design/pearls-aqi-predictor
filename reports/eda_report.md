@@ -1,17 +1,17 @@
 # Exploratory Data Analysis -- Karachi AQI
 
-_Generated 2026-09-06 18:18 UTC from 8,672 hourly
-observations spanning 366.0 days (2025-09-05 to 2026-09-06,
+_Generated 2026-09-07 07:33 UTC from 8,684 hourly
+observations spanning 366.5 days (2025-09-05 to 2026-09-07,
 98.7% hourly coverage)._
 
 ## 1. Air quality profile
 
 | Statistic | Value |
 | --- | --- |
-| Mean AQI | 89.6 |
+| Mean AQI | 89.5 |
 | Median AQI | 84.0 |
 | Std. deviation | 22.3 |
-| 95th percentile | 137.0 |
+| 95th percentile | 136.9 |
 | Range | 41.0 -- 165.0 |
 | Hours at or above the alert threshold (150) | 229 (2.6%) |
 | Most frequent dominant pollutant | `pm2_5` |
@@ -27,8 +27,8 @@ lets them dominate the gradient.
 
 * **Daily cycle.** AQI peaks around **18:00 local**
   (94.2) and bottoms out at **10:00 local**
-  (88.7) -- a swing of
-  5.5 AQI points. Hour-of-day is
+  (88.6) -- a swing of
+  5.6 AQI points. Hour-of-day is
   therefore encoded cyclically (sin/cos) so that 23:00 and 00:00 sit next to each
   other in feature space.
 * **Weekly cycle.** Sunday is the worst day on average,
@@ -43,10 +43,10 @@ lets them dominate the gradient.
 | 1 h | 0.992 |
 | 3 h | 0.955 |
 | 12 h | 0.848 |
-| 24 h | 0.727 |
+| 24 h | 0.728 |
 | 48 h | 0.566 |
 | 72 h | 0.468 |
-| 168 h | 0.340 |
+| 168 h | 0.341 |
 
 Correlation stays materially above zero out to 72 hours, and there is a local
 bump at 24 h from the daily cycle. Both observations are baked directly into the
@@ -60,12 +60,12 @@ and the dashboard shows that widening uncertainty band rather than hiding it.
 | Variable | Correlation with AQI |
 | --- | --- |
 | `pm2_5` | +0.728 |
-| `so2` | +0.546 |
+| `so2` | +0.547 |
 | `pressure` | +0.514 |
 | `co` | +0.484 |
 | `wind_speed` | -0.433 |
 | `no2` | +0.404 |
-| `humidity` | -0.368 |
+| `humidity` | -0.369 |
 | `temperature` | -0.322 |
 
 Wind speed is the dominant meteorological control: stagnant air traps
@@ -89,10 +89,10 @@ numerically but adjacent physically.
 
 ## 6. Figures
 
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\01_timeseries.png](figures/01_timeseries.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\02_distribution.png](figures/02_distribution.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\03_seasonality.png](figures/03_seasonality.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\04_correlation.png](figures/04_correlation.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\05_autocorrelation.png](figures/05_autocorrelation.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\06_weather.png](figures/06_weather.png)
-![C:\Users\kasha\OneDrive\Desktop\AQI Predictor\reports\figures\07_feature_correlation.png](figures/07_feature_correlation.png)
+![01_timeseries.png](figures/01_timeseries.png)
+![02_distribution.png](figures/02_distribution.png)
+![03_seasonality.png](figures/03_seasonality.png)
+![04_correlation.png](figures/04_correlation.png)
+![05_autocorrelation.png](figures/05_autocorrelation.png)
+![06_weather.png](figures/06_weather.png)
+![07_feature_correlation.png](figures/07_feature_correlation.png)

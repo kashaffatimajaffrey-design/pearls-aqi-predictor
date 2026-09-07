@@ -5,7 +5,7 @@
     "lat": 24.8607,
     "lon": 67.0011
   },
-  "generated_at": "2026-09-07T05:47:06.445974+00:00",
+  "generated_at": "2026-09-07T07:33:57.200179+00:00",
   "as_of": "2026-09-07T05:00:00+00:00",
   "current": {
     "aqi": 64.0,
@@ -23,49 +23,49 @@
       "horizon_hours": 24,
       "horizon_days": 1,
       "valid_at": "2026-09-08T05:00:00+00:00",
-      "aqi": 69.6,
-      "aqi_lower": 63.2,
-      "aqi_upper": 76.1,
+      "aqi": 68.2,
+      "aqi_lower": 61.6,
+      "aqi_upper": 74.8,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 5.02
+      "model_rmse": 5.15
     },
     {
       "horizon_hours": 48,
       "horizon_days": 2,
       "valid_at": "2026-09-09T05:00:00+00:00",
-      "aqi": 76.5,
-      "aqi_lower": 66.2,
-      "aqi_upper": 86.9,
+      "aqi": 75.4,
+      "aqi_lower": 65.5,
+      "aqi_upper": 85.2,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 8.08
+      "model_rmse": 7.69
     },
     {
       "horizon_hours": 72,
       "horizon_days": 3,
       "valid_at": "2026-09-10T05:00:00+00:00",
-      "aqi": 77.9,
-      "aqi_lower": 65.9,
-      "aqi_upper": 89.9,
+      "aqi": 78.8,
+      "aqi_lower": 66.9,
+      "aqi_upper": 90.8,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 9.39
+      "model_rmse": 9.31
     }
   ],
   "model": {
     "name": "gradient_boosting",
-    "version": "v0001",
-    "trained_at": "2026-09-06T17:34:28.588196+00:00",
-    "rmse": 7.715759227439784,
-    "mae": 6.656873876290358,
-    "r2": 0.36512422530435756
+    "version": "v0003",
+    "trained_at": "2026-09-07T07:29:09.821969+00:00",
+    "rmse": 7.576912806615099,
+    "mae": 6.508229159206214,
+    "r2": 0.39001178079708926
   },
   "alerts": [],
   "data_source": "openmeteo"
