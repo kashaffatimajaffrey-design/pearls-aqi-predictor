@@ -5,7 +5,7 @@
     "lat": 24.8607,
     "lon": 67.0011
   },
-  "generated_at": "2026-09-09T03:34:29.993375+00:00",
+  "generated_at": "2026-09-09T07:35:38.118392+00:00",
   "as_of": "2026-09-09T03:00:00+00:00",
   "current": {
     "aqi": 65.0,
@@ -23,9 +23,9 @@
       "horizon_hours": 24,
       "horizon_days": 1,
       "valid_at": "2026-09-10T03:00:00+00:00",
-      "aqi": 73.8,
-      "aqi_lower": 67.1,
-      "aqi_upper": 80.5,
+      "aqi": 73.7,
+      "aqi_lower": 67.0,
+      "aqi_upper": 80.4,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
@@ -36,36 +36,36 @@
       "horizon_hours": 48,
       "horizon_days": 2,
       "valid_at": "2026-09-11T03:00:00+00:00",
-      "aqi": 78.4,
-      "aqi_lower": 68.2,
-      "aqi_upper": 88.6,
+      "aqi": 80.7,
+      "aqi_lower": 69.9,
+      "aqi_upper": 91.5,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 7.96
+      "model_rmse": 8.41
     },
     {
       "horizon_hours": 72,
       "horizon_days": 3,
       "valid_at": "2026-09-12T03:00:00+00:00",
-      "aqi": 80.4,
-      "aqi_lower": 68.6,
-      "aqi_upper": 92.2,
+      "aqi": 78.7,
+      "aqi_lower": 66.4,
+      "aqi_upper": 91.0,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 9.23
+      "model_rmse": 9.59
     }
   ],
   "model": {
     "name": "gradient_boosting",
-    "version": "v0004",
-    "trained_at": "2026-09-08T07:23:20.490064+00:00",
-    "rmse": 7.660021598411965,
-    "mae": 6.623264095540317,
-    "r2": 0.38373922544424977
+    "version": "v0005",
+    "trained_at": "2026-09-09T07:31:43.722754+00:00",
+    "rmse": 7.963367862740528,
+    "mae": 6.893419108549669,
+    "r2": 0.34192461979532696
   },
   "alerts": [],
   "data_source": "openmeteo"
