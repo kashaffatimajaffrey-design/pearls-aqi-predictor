@@ -1,7 +1,7 @@
 # Exploratory Data Analysis -- Karachi AQI
 
-_Generated 2026-09-10 07:32 UTC from 8,756 hourly
-observations spanning 369.5 days (2025-09-05 to 2026-09-10,
+_Generated 2026-09-11 07:31 UTC from 8,778 hourly
+observations spanning 370.5 days (2025-09-05 to 2026-09-11,
 98.7% hourly coverage)._
 
 ## 1. Air quality profile
@@ -26,8 +26,8 @@ lets them dominate the gradient.
 ## 2. Temporal structure
 
 * **Daily cycle.** AQI peaks around **18:00 local**
-  (94.0) and bottoms out at **10:00 local**
-  (88.5) -- a swing of
+  (93.9) and bottoms out at **23:00 local**
+  (88.4) -- a swing of
   5.5 AQI points. Hour-of-day is
   therefore encoded cyclically (sin/cos) so that 23:00 and 00:00 sit next to each
   other in feature space.
@@ -42,11 +42,11 @@ lets them dominate the gradient.
 | --- | --- |
 | 1 h | 0.992 |
 | 3 h | 0.956 |
-| 12 h | 0.849 |
+| 12 h | 0.850 |
 | 24 h | 0.730 |
 | 48 h | 0.570 |
 | 72 h | 0.473 |
-| 168 h | 0.348 |
+| 168 h | 0.349 |
 
 Correlation stays materially above zero out to 72 hours, and there is a local
 bump at 24 h from the daily cycle. Both observations are baked directly into the
@@ -63,10 +63,10 @@ and the dashboard shows that widening uncertainty band rather than hiding it.
 | `so2` | +0.549 |
 | `pressure` | +0.513 |
 | `co` | +0.487 |
-| `wind_speed` | -0.431 |
-| `no2` | +0.405 |
+| `wind_speed` | -0.429 |
+| `no2` | +0.404 |
 | `humidity` | -0.373 |
-| `temperature` | -0.322 |
+| `temperature` | -0.323 |
 
 Wind speed is the dominant meteorological control: stagnant air traps
 particulates near the surface. That relationship motivates the `stagnation`
