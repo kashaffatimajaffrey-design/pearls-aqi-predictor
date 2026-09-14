@@ -1,12 +1,12 @@
 {
-  "version": "v0009",
+  "version": "v0010",
   "best_model": "xgboost",
-  "test_rmse": 7.321,
-  "test_mae": 5.867,
-  "test_r2": 0.4354,
-  "baseline_rmse": 10.908,
-  "improvement_over_baseline_pct": 32.9,
+  "test_rmse": 7.467,
+  "test_mae": 6.19,
+  "test_r2": 0.4108,
+  "baseline_rmse": 10.749,
+  "improvement_over_baseline_pct": 30.5,
   "models_trained": 7,
-  "duration_s": 194.5,
+  "duration_s": 286.6,
   "registry": "local"
 }
