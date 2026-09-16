@@ -1,7 +1,7 @@
 # Exploratory Data Analysis -- Karachi AQI
 
-_Generated 2026-09-15 08:03 UTC from 8,878 hourly
-observations spanning 374.6 days (2025-09-05 to 2026-09-15,
+_Generated 2026-09-16 07:54 UTC from 8,900 hourly
+observations spanning 375.5 days (2025-09-05 to 2026-09-16,
 98.7% hourly coverage)._
 
 ## 1. Air quality profile
@@ -9,8 +9,8 @@ observations spanning 374.6 days (2025-09-05 to 2026-09-15,
 | Statistic | Value |
 | --- | --- |
 | Mean AQI | 89.2 |
-| Median AQI | 84.0 |
-| Std. deviation | 22.2 |
+| Median AQI | 83.0 |
+| Std. deviation | 22.1 |
 | 95th percentile | 136.0 |
 | Range | 41.0 -- 165.0 |
 | Hours at or above the alert threshold (150) | 229 (2.6%) |
@@ -18,7 +18,7 @@ observations spanning 374.6 days (2025-09-05 to 2026-09-15,
 | Missing raw pollutant readings | 0.0% |
 
 The distribution is right-skewed: typical conditions sit near the median of
-84.0, but the tail reaches 165.0. That skew is why the
+83.0, but the tail reaches 165.0. That skew is why the
 neural networks are trained with a Huber loss rather than MSE -- the rare severe
 episodes are exactly the ones a forecast needs to get right, and a squared loss
 lets them dominate the gradient.
@@ -26,7 +26,7 @@ lets them dominate the gradient.
 ## 2. Temporal structure
 
 * **Daily cycle.** AQI peaks around **18:00 local**
-  (93.7) and bottoms out at **10:00 local**
+  (93.7) and bottoms out at **23:00 local**
   (88.3) -- a swing of
   5.4 AQI points. Hour-of-day is
   therefore encoded cyclically (sin/cos) so that 23:00 and 00:00 sit next to each
@@ -63,8 +63,8 @@ and the dashboard shows that widening uncertainty band rather than hiding it.
 | `so2` | +0.551 |
 | `pressure` | +0.514 |
 | `co` | +0.488 |
-| `wind_speed` | -0.425 |
-| `no2` | +0.405 |
+| `wind_speed` | -0.423 |
+| `no2` | +0.404 |
 | `humidity` | -0.374 |
 | `temperature` | -0.324 |
 
