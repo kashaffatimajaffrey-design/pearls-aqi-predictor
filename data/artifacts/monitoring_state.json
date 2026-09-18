@@ -1,11 +1,11 @@
 {
-  "model_name": "tf_lstm",
-  "model_rmse": 6.914181215815282,
-  "model_mae": 5.170837372068376,
-  "model_r2": 0.41784862529294015,
-  "updated_at": "2026-09-18T04:21:06.597573+00:00",
-  "training_last_success": "2026-09-17T07:59:45.305337+00:00",
-  "training_last_duration_s": 214.4,
+  "model_name": "gradient_boosting",
+  "model_rmse": 8.691775675047406,
+  "model_mae": 6.899775287101208,
+  "model_r2": 0.12514052504273354,
+  "updated_at": "2026-09-18T07:37:21.765679+00:00",
+  "training_last_success": "2026-09-18T07:37:21.765639+00:00",
+  "training_last_duration_s": 194.2,
   "feature_last_success": "2026-09-18T04:21:06.597456+00:00",
   "feature_last_duration_s": 1.46
 }

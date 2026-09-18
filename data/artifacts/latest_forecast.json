@@ -5,67 +5,67 @@
     "lat": 24.8607,
     "lon": 67.0011
   },
-  "generated_at": "2026-09-17T07:59:52.265398+00:00",
-  "as_of": "2026-09-17T07:00:00+00:00",
+  "generated_at": "2026-09-18T07:37:26.823083+00:00",
+  "as_of": "2026-09-18T04:00:00+00:00",
   "current": {
-    "aqi": 77.0,
+    "aqi": 73.0,
     "category": "Moderate",
     "color": "#ffff00",
     "dominant_pollutant": "pm2_5",
-    "pm2_5": 24.7,
-    "pm10": 46.6,
-    "temperature": 31.2,
-    "humidity": 67.0,
-    "wind_speed": 13.0
+    "pm2_5": 17.6,
+    "pm10": 48.7,
+    "temperature": 29.3,
+    "humidity": 74.0,
+    "wind_speed": 12.0
   },
   "forecast": [
     {
       "horizon_hours": 24,
       "horizon_days": 1,
-      "valid_at": "2026-09-18T07:00:00+00:00",
-      "aqi": 74.5,
-      "aqi_lower": 66.3,
-      "aqi_upper": 82.8,
+      "valid_at": "2026-09-19T04:00:00+00:00",
+      "aqi": 82.9,
+      "aqi_lower": 76.3,
+      "aqi_upper": 89.5,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 6.43
+      "model_rmse": 5.12
     },
     {
       "horizon_hours": 48,
       "horizon_days": 2,
-      "valid_at": "2026-09-19T07:00:00+00:00",
-      "aqi": 74.5,
-      "aqi_lower": 67.0,
-      "aqi_upper": 82.1,
+      "valid_at": "2026-09-20T04:00:00+00:00",
+      "aqi": 85.9,
+      "aqi_lower": 74.3,
+      "aqi_upper": 97.5,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 5.9
+      "model_rmse": 9.04
     },
     {
       "horizon_hours": 72,
       "horizon_days": 3,
-      "valid_at": "2026-09-20T07:00:00+00:00",
-      "aqi": 74.5,
-      "aqi_lower": 64.0,
-      "aqi_upper": 85.0,
+      "valid_at": "2026-09-21T04:00:00+00:00",
+      "aqi": 98.1,
+      "aqi_lower": 84.2,
+      "aqi_upper": 112.1,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 8.2
+      "model_rmse": 10.9
     }
   ],
   "model": {
-    "name": "tf_lstm",
-    "version": "v0013",
-    "trained_at": "2026-09-17T07:56:10.916951+00:00",
-    "rmse": 6.914181215815282,
-    "mae": 5.170837372068376,
-    "r2": 0.41784862529294015
+    "name": "gradient_boosting",
+    "version": "v0014",
+    "trained_at": "2026-09-18T07:34:07.548745+00:00",
+    "rmse": 8.691775675047406,
+    "mae": 6.899775287101208,
+    "r2": 0.12514052504273354
   },
   "alerts": [],
   "data_source": "openmeteo"
