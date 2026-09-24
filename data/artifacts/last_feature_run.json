@@ -1,15 +1,15 @@
 {
-  "run_at": "2026-09-24T01:11:06.156225+00:00",
-  "duration_s": 1.12,
+  "run_at": "2026-09-24T07:21:19.722577+00:00",
+  "duration_s": 1.4,
   "source_configured": "openmeteo",
   "source_effective": "openmeteo",
   "feature_store": "local",
   "raw_rows": 168,
   "feature_rows_written": 96,
   "feature_count": 138,
-  "window_start": "2026-09-20 02:00:00+00:00",
-  "window_end": "2026-09-24 01:00:00+00:00",
-  "latest_aqi": 74.0,
+  "window_start": "2026-09-20 08:00:00+00:00",
+  "window_end": "2026-09-24 07:00:00+00:00",
+  "latest_aqi": 73.0,
   "dominant_pollutant": "pm2_5",
   "alert": null
 }
