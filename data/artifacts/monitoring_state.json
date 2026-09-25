@@ -1,11 +1,11 @@
 {
-  "model_name": "random_forest",
-  "model_rmse": 9.021425988608458,
-  "model_mae": 6.363086557476478,
-  "model_r2": 0.11864137544581055,
-  "updated_at": "2026-09-25T07:15:07.236688+00:00",
-  "training_last_success": "2026-09-24T07:50:25.572538+00:00",
-  "training_last_duration_s": 287.0,
+  "model_name": "xgboost",
+  "model_rmse": 8.566998905901926,
+  "model_mae": 6.048918877959882,
+  "model_r2": 0.21148284523436142,
+  "updated_at": "2026-09-25T08:08:55.383528+00:00",
+  "training_last_success": "2026-09-25T08:08:55.383474+00:00",
+  "training_last_duration_s": 201.3,
   "feature_last_success": "2026-09-25T07:15:07.236578+00:00",
   "feature_last_duration_s": 1.23
 }
