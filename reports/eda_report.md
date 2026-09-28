@@ -1,7 +1,7 @@
 # Exploratory Data Analysis -- Karachi AQI
 
-_Generated 2026-09-27 08:31 UTC from 9,166 hourly
-observations spanning 386.6 days (2025-09-05 to 2026-09-27,
+_Generated 2026-09-28 08:57 UTC from 9,189 hourly
+observations spanning 387.6 days (2025-09-05 to 2026-09-28,
 98.8% hourly coverage)._
 
 ## 1. Air quality profile
@@ -26,9 +26,9 @@ lets them dominate the gradient.
 ## 2. Temporal structure
 
 * **Daily cycle.** AQI peaks around **18:00 local**
-  (93.5) and bottoms out at **09:00 local**
+  (93.4) and bottoms out at **10:00 local**
   (87.9) -- a swing of
-  5.6 AQI points. Hour-of-day is
+  5.5 AQI points. Hour-of-day is
   therefore encoded cyclically (sin/cos) so that 23:00 and 00:00 sit next to each
   other in feature space.
 * **Weekly cycle.** Sunday is the worst day on average,
@@ -43,10 +43,10 @@ lets them dominate the gradient.
 | 1 h | 0.992 |
 | 3 h | 0.954 |
 | 12 h | 0.848 |
-| 24 h | 0.729 |
+| 24 h | 0.728 |
 | 48 h | 0.570 |
 | 72 h | 0.473 |
-| 168 h | 0.357 |
+| 168 h | 0.356 |
 
 Correlation stays materially above zero out to 72 hours, and there is a local
 bump at 24 h from the daily cycle. Both observations are baked directly into the
@@ -59,7 +59,7 @@ and the dashboard shows that widening uncertainty band rather than hiding it.
 
 | Variable | Correlation with AQI |
 | --- | --- |
-| `pm2_5` | +0.729 |
+| `pm2_5` | +0.728 |
 | `so2` | +0.554 |
 | `pressure` | +0.513 |
 | `co` | +0.491 |
