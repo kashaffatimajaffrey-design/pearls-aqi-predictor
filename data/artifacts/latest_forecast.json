@@ -5,7 +5,7 @@
     "lat": 24.8607,
     "lon": 67.0011
   },
-  "generated_at": "2026-10-01T08:27:17.213869+00:00",
+  "generated_at": "2026-10-01T09:22:29.541667+00:00",
   "as_of": "2026-10-01T08:00:00+00:00",
   "current": {
     "aqi": 90.0,
@@ -23,49 +23,49 @@
       "horizon_hours": 24,
       "horizon_days": 1,
       "valid_at": "2026-10-02T08:00:00+00:00",
-      "aqi": 91.3,
-      "aqi_lower": 80.1,
-      "aqi_upper": 102.5,
-      "interval": "80%",
-      "category": "Moderate",
-      "color": "#ffff00",
-      "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 8.71
-    },
-    {
-      "horizon_hours": 48,
-      "horizon_days": 2,
-      "valid_at": "2026-10-03T08:00:00+00:00",
-      "aqi": 90.0,
-      "aqi_lower": 79.0,
+      "aqi": 89.1,
+      "aqi_lower": 77.2,
       "aqi_upper": 101.0,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 8.56
+      "model_rmse": 9.29
+    },
+    {
+      "horizon_hours": 48,
+      "horizon_days": 2,
+      "valid_at": "2026-10-03T08:00:00+00:00",
+      "aqi": 92.0,
+      "aqi_lower": 80.6,
+      "aqi_upper": 103.3,
+      "interval": "80%",
+      "category": "Moderate",
+      "color": "#ffff00",
+      "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
+      "model_rmse": 8.84
     },
     {
       "horizon_hours": 72,
       "horizon_days": 3,
       "valid_at": "2026-10-04T08:00:00+00:00",
-      "aqi": 83.2,
-      "aqi_lower": 71.1,
-      "aqi_upper": 95.3,
+      "aqi": 81.9,
+      "aqi_lower": 69.6,
+      "aqi_upper": 94.2,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 9.41
+      "model_rmse": 9.61
     }
   ],
   "model": {
     "name": "xgboost",
-    "version": "v0026",
-    "trained_at": "2026-09-30T08:53:26.199672+00:00",
-    "rmse": 8.901409332369502,
-    "mae": 6.155407643192029,
-    "r2": 0.16744989461810011
+    "version": "v0027",
+    "trained_at": "2026-10-01T09:17:40.473800+00:00",
+    "rmse": 9.251610978581091,
+    "mae": 6.4616357056552145,
+    "r2": 0.17909853403379647
   },
   "alerts": [],
   "data_source": "openmeteo"
