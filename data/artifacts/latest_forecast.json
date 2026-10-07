@@ -5,7 +5,7 @@
     "lat": 24.8607,
     "lon": 67.0011
   },
-  "generated_at": "2026-10-07T06:55:25.419384+00:00",
+  "generated_at": "2026-10-07T09:08:50.265700+00:00",
   "as_of": "2026-10-07T06:00:00+00:00",
   "current": {
     "aqi": 85.0,
@@ -24,48 +24,48 @@
       "horizon_days": 1,
       "valid_at": "2026-10-08T06:00:00+00:00",
       "aqi": 81.3,
-      "aqi_lower": 68.2,
-      "aqi_upper": 94.5,
+      "aqi_lower": 67.9,
+      "aqi_upper": 94.7,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 10.26
+      "model_rmse": 10.45
     },
     {
       "horizon_hours": 48,
       "horizon_days": 2,
       "valid_at": "2026-10-09T06:00:00+00:00",
       "aqi": 77.6,
-      "aqi_lower": 63.6,
-      "aqi_upper": 91.5,
+      "aqi_lower": 63.5,
+      "aqi_upper": 91.6,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 10.89
+      "model_rmse": 10.95
     },
     {
       "horizon_hours": 72,
       "horizon_days": 3,
       "valid_at": "2026-10-10T06:00:00+00:00",
       "aqi": 70.5,
-      "aqi_lower": 56.7,
-      "aqi_upper": 84.2,
+      "aqi_lower": 56.9,
+      "aqi_upper": 84.1,
       "interval": "80%",
       "category": "Moderate",
       "color": "#ffff00",
       "advice": "Unusually sensitive people should consider limiting prolonged exertion outdoors.",
-      "model_rmse": 10.74
+      "model_rmse": 10.61
     }
   ],
   "model": {
     "name": "ridge",
-    "version": "v0032",
-    "trained_at": "2026-10-06T09:14:29.584685+00:00",
-    "rmse": 10.633044458860356,
-    "mae": 8.524015939963277,
-    "r2": 0.17198935321873368
+    "version": "v0033",
+    "trained_at": "2026-10-07T09:05:20.821064+00:00",
+    "rmse": 10.671823004769655,
+    "mae": 8.594668818085802,
+    "r2": 0.19879203565707712
   },
   "alerts": [],
   "data_source": "openmeteo"
