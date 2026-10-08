@@ -1,9 +1,9 @@
 {
-  "rows": 9405,
-  "span_days": 396.6,
+  "rows": 9430,
+  "span_days": 397.6,
   "coverage_pct": 98.8,
   "start": "2025-09-05 16:00:00+00:00",
-  "end": "2026-10-07 06:00:00+00:00",
+  "end": "2026-10-08 07:00:00+00:00",
   "aqi_mean": 88.6,
   "aqi_median": 83.0,
   "aqi_std": 21.8,
@@ -13,7 +13,7 @@
   "unhealthy_hours": 229,
   "unhealthy_pct": 2.4,
   "category_distribution": {
-    "Moderate": 7178,
+    "Moderate": 7203,
     "Unhealthy for Sensitive Groups": 1988,
     "Unhealthy": 218,
     "Good": 21
